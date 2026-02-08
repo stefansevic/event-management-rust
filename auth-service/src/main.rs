@@ -5,6 +5,7 @@ mod handlers;
 mod models;
 
 use axum::{routing::{get, post}, Router};
+use shared::auth::HasJwtSecret;
 use sqlx::PgPool;
 
 /// Stanje aplikacije - deli se izmedju svih handler-a
@@ -14,11 +15,16 @@ pub struct AppState {
     pub jwt_secret: String,
 }
 
+// Implementiramo HasJwtSecret da bi AuthUser extractor radio
+impl HasJwtSecret for AppState {
+    fn jwt_secret(&self) -> &str {
+        &self.jwt_secret
+    }
+}
+
 #[tokio::main]
 async fn main() {
     tracing_subscriber::fmt::init();
-
-    // Ucitavamo .env fajl (ako postoji)
     dotenvy::dotenv().ok();
 
     let database_url = std::env::var("AUTH_DATABASE_URL")
@@ -27,7 +33,6 @@ async fn main() {
     let jwt_secret = std::env::var("JWT_SECRET")
         .expect("JWT_SECRET mora biti postavljen u .env");
 
-    // Povezujemo se na bazu
     let pool = db::create_pool(&database_url).await;
 
     let state = AppState {
@@ -35,11 +40,11 @@ async fn main() {
         jwt_secret,
     };
 
-    // Definisemo rute
     let app = Router::new()
         .route("/health", get(handlers::health_check))
         .route("/register", post(handlers::register))
         .route("/login", post(handlers::login))
+        .route("/me", get(handlers::me))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3001")

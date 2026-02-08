@@ -1,16 +1,16 @@
-// Handleri za auth rute (register, login, health)
+// Handleri za auth rute
 
 use axum::{extract::State, http::StatusCode, Json};
 use bcrypt::{hash, verify, DEFAULT_COST};
-use uuid::Uuid;
 use serde_json::json;
+use uuid::Uuid;
 
 use crate::models::{AuthResponse, LoginRequest, RegisterRequest, User};
 use crate::AppState;
-use shared::auth::create_token;
+use shared::auth::{create_token, AuthUser};
 use shared::models::ApiResponse;
 
-/// GET /health - da li servis radi
+/// GET /health
 pub async fn health_check() -> Json<serde_json::Value> {
     Json(json!({
         "service": "auth-service",
@@ -18,12 +18,46 @@ pub async fn health_check() -> Json<serde_json::Value> {
     }))
 }
 
-/// POST /register - registracija novog korisnika
+/// me - returna podatke o logovanom korisniku
+
+pub async fn me(
+    user: AuthUser,
+    State(state): State<AppState>,
+) -> (StatusCode, Json<ApiResponse<AuthResponse>>) {
+    // kupimo claim-ove iz tokena
+    let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
+        .bind(
+            uuid::Uuid::parse_str(&user.0.sub)
+                .unwrap_or_default(),
+        )
+        .fetch_optional(&state.db)
+        .await;
+
+    match result {
+        Ok(Some(db_user)) => {
+            let response = AuthResponse {
+                token: String::new(),
+                user_id: db_user.id.to_string(),
+                email: db_user.email,
+                role: db_user.role,
+            };
+            (
+                StatusCode::OK,
+                Json(ApiResponse::success("Korisnik pronadjen", response)),
+            )
+        }
+        _ => (
+            StatusCode::NOT_FOUND,
+            Json(ApiResponse::error("Korisnik ne postoji u bazi")),
+        ),
+    }
+}
+
+/// POST /register
 pub async fn register(
     State(state): State<AppState>,
     Json(req): Json<RegisterRequest>,
 ) -> (StatusCode, Json<ApiResponse<AuthResponse>>) {
-    // Hesiramo lozinku pre cuvanja u bazu
     let password_hash = match hash(&req.password, DEFAULT_COST) {
         Ok(h) => h,
         Err(_) => {
@@ -36,7 +70,6 @@ pub async fn register(
 
     let id = Uuid::new_v4();
 
-    // Upisujemo korisnika u bazu
     let result = sqlx::query_as::<_, User>(
         "INSERT INTO users (id, email, password_hash, role) VALUES ($1, $2, $3, $4) RETURNING *",
     )
@@ -49,7 +82,6 @@ pub async fn register(
 
     match result {
         Ok(user) => {
-            // Pravimo JWT token za novog korisnika
             let token = create_token(
                 &user.id.to_string(),
                 &user.email,
@@ -76,12 +108,11 @@ pub async fn register(
     }
 }
 
-/// POST /login - prijava korisnika
+/// POST /login
 pub async fn login(
     State(state): State<AppState>,
     Json(req): Json<LoginRequest>,
 ) -> (StatusCode, Json<ApiResponse<AuthResponse>>) {
-    // Trazimo korisnika po email-u
     let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE email = $1")
         .bind(&req.email)
         .fetch_optional(&state.db)
@@ -89,7 +120,6 @@ pub async fn login(
 
     match result {
         Ok(Some(user)) => {
-            // Proveravamo da li se lozinka poklapa
             if verify(&req.password, &user.password_hash).unwrap_or(false) {
                 let token = create_token(
                     &user.id.to_string(),

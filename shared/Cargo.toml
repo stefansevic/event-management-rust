@@ -9,3 +9,4 @@ serde_json = { workspace = true }
 uuid = { workspace = true }
 chrono = { workspace = true }
 jsonwebtoken = { workspace = true }
+axum = { workspace = true }

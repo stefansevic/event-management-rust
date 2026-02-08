@@ -1,5 +1,5 @@
 -- Tabela korisnika za auth servis
--- Pokreni ovo rucno u PostgreSQL pre pokretanja servisa
+-- Rucno se pokrece u PostgreSQL pre pokretanja servisa
 
 CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
 
