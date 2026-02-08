@@ -1,0 +1,10 @@
+// Konekcija na PostgreSQL bazu
+
+use sqlx::postgres::PgPool;
+
+/// Pravi pool konekcija ka bazi
+pub async fn create_pool(database_url: &str) -> PgPool {
+    PgPool::connect(database_url)
+        .await
+        .expect("Ne mogu da se povezem na bazu podataka")
+}
