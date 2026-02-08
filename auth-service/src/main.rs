@@ -1,4 +1,4 @@
-// Auth servis - registracija, login, JWT tokeni
+// Auth servis 
 
 mod db;
 mod handlers;
@@ -8,14 +8,14 @@ use axum::{routing::{get, post}, Router};
 use shared::auth::HasJwtSecret;
 use sqlx::PgPool;
 
-/// Stanje aplikacije - deli se izmedju svih handler-a
+/// Stanje appa 
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
     pub jwt_secret: String,
 }
 
-// Implementiramo HasJwtSecret da bi AuthUser extractor radio
+//  HasJwtSecret da bi AuthUser extractor radio
 impl HasJwtSecret for AppState {
     fn jwt_secret(&self) -> &str {
         &self.jwt_secret

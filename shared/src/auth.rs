@@ -55,12 +55,11 @@ pub fn validate_token(
     Ok(token_data.claims)
 }
 
-// Middleware / Extractor
+// Auth Extractor
 
 pub trait HasJwtSecret {
     fn jwt_secret(&self) -> &str;
 }
-
 
 pub struct AuthUser(pub Claims);
 
@@ -74,7 +73,7 @@ where
         parts: &mut Parts,
         state: &S,
     ) -> Result<Self, Self::Rejection> {
-        // Uzimamo Authorization header
+        // Uzimamo Auth header
         let auth_header = parts
             .headers
             .get(header::AUTHORIZATION)
