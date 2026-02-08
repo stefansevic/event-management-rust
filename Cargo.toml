@@ -1,0 +1,28 @@
+# Workspace config - ovim povezujemo sve servise u jedan projekat
+
+[workspace]
+members = [
+    "shared",
+    "auth-service",
+    "user-service",
+    "event-service",
+    "registration-service",
+    "api-gateway",
+]
+
+# Verzije dep-ova na jednom mestu da ne pisemo svuda isto
+[workspace.dependencies]
+axum = "0.7"
+tokio = { version = "1", features = ["full"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sqlx = { version = "0.7", features = ["runtime-tokio-rustls", "postgres", "chrono", "uuid"] }
+uuid = { version = "1", features = ["v4", "serde"] }
+chrono = { version = "0.4", features = ["serde"] }
+jsonwebtoken = "9"
+bcrypt = "0.15"
+tower-http = { version = "0.5", features = ["cors", "trace"] }
+tracing = "0.1"
+tracing-subscriber = "0.3"
+reqwest = { version = "0.11", features = ["json"] }
+dotenvy = "0.15"
