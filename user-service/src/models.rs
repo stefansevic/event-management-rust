@@ -1,11 +1,11 @@
-// Modeli za user servis - profili korisnika
+// Modeli za usere
 
 use serde::{Deserialize, Serialize};
 use sqlx::FromRow;
 use uuid::Uuid;
 use chrono::NaiveDateTime;
 
-/// Profil korisnika u bazi
+/// user u bazi
 #[derive(Debug, FromRow, Serialize)]
 pub struct UserProfile {
     pub id: Uuid,
@@ -17,7 +17,7 @@ pub struct UserProfile {
     pub updated_at: NaiveDateTime,
 }
 
-/// Zahtev za kreiranje/azuriranje profila
+/// Req za create/update profile
 #[derive(Debug, Deserialize)]
 pub struct ProfileRequest {
     pub full_name: String,
