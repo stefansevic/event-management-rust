@@ -1,0 +1,320 @@
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    background: #f0f2f5;
+    color: #1a1a2e;
+    line-height: 1.6;
+}
+
+/* navbar */
+nav {
+    background: #1a1a2e;
+    color: white;
+    padding: 0 2rem;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 60px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+}
+
+.nav-brand {
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #e94560;
+}
+
+.nav-links {
+    display: flex;
+    align-items: center;
+    gap: 1.2rem;
+}
+
+.nav-links a {
+    color: #ccc;
+    text-decoration: none;
+    font-size: 0.95rem;
+    transition: color 0.2s;
+}
+
+.nav-links a:hover {
+    color: #e94560;
+}
+
+.nav-user {
+    color: #e94560;
+    font-size: 0.85rem;
+    padding-left: 0.5rem;
+    border-left: 1px solid #333;
+}
+
+/* Container */
+.container {
+    max-width: 1000px;
+    margin: 2rem auto;
+    padding: 0 1rem;
+}
+
+h1 {
+    margin-bottom: 1.5rem;
+    font-size: 1.8rem;
+}
+
+h3 {
+    margin-bottom: 1rem;
+}
+
+/* Dugmad */
+.btn {
+    padding: 0.6rem 1.2rem;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: 600;
+    transition: background 0.2s;
+}
+
+.btn-primary {
+    background: #e94560;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #c73651;
+}
+
+.btn-secondary {
+    background: #16213e;
+    color: white;
+}
+
+.btn-secondary:hover {
+    background: #0f3460;
+}
+
+.btn-danger {
+    background: #dc3545;
+    color: white;
+}
+
+.btn-small {
+    padding: 0.4rem 0.8rem;
+    font-size: 0.8rem;
+}
+
+/* Auth box */
+.auth-box {
+    max-width: 400px;
+    margin: 3rem auto;
+    background: white;
+    border-radius: 12px;
+    padding: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+.tabs {
+    display: flex;
+    gap: 0;
+    margin-bottom: 1.5rem;
+    border-bottom: 2px solid #eee;
+}
+
+.tab {
+    flex: 1;
+    padding: 0.7rem;
+    border: none;
+    background: none;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #999;
+    border-bottom: 2px solid transparent;
+    margin-bottom: -2px;
+}
+
+.tab.active {
+    color: #e94560;
+    border-bottom-color: #e94560;
+}
+
+.auth-box input {
+    width: 100%;
+    padding: 0.7rem;
+    margin-bottom: 1rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.auth-box .btn {
+    width: 100%;
+}
+
+/* Search bar */
+.search-bar {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1.5rem;
+}
+
+.search-bar input,
+.search-bar select {
+    padding: 0.7rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+
+.search-bar input {
+    flex: 1;
+}
+
+/* Forma za kreiranje */
+#create-event-box {
+    background: white;
+    padding: 1.5rem;
+    border-radius: 12px;
+    margin-bottom: 2rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+}
+
+#create-event-box input,
+#create-event-box select,
+#create-event-box textarea {
+    width: 100%;
+    padding: 0.6rem;
+    margin-bottom: 0.8rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    font-family: inherit;
+}
+
+.form-row {
+    display: flex;
+    gap: 1rem;
+}
+
+.form-row > * {
+    flex: 1;
+}
+
+/* Kartice */
+.cards-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    gap: 1.2rem;
+}
+
+.card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+    transition: transform 0.15s;
+}
+
+.card:hover {
+    transform: translateY(-2px);
+}
+
+.card h3 {
+    color: #1a1a2e;
+    margin-bottom: 0.5rem;
+}
+
+.card p {
+    color: #666;
+    font-size: 0.9rem;
+    margin-bottom: 0.3rem;
+}
+
+.card .badge {
+    display: inline-block;
+    padding: 0.2rem 0.6rem;
+    background: #e94560;
+    color: white;
+    border-radius: 20px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    margin-bottom: 0.8rem;
+}
+
+.card .meta {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 1rem;
+    padding-top: 0.8rem;
+    border-top: 1px solid #eee;
+}
+
+.card .capacity {
+    font-size: 0.85rem;
+    color: #888;
+}
+
+/* Statistike */
+.stats-box {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 1rem;
+}
+
+.stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 1.5rem;
+    text-align: center;
+    box-shadow: 0 2px 12px rgba(0,0,0,0.06);
+}
+
+.stat-card .number {
+    font-size: 2rem;
+    font-weight: 700;
+    color: #e94560;
+}
+
+.stat-card .label {
+    font-size: 0.85rem;
+    color: #888;
+    margin-top: 0.3rem;
+}
+
+/* Toast notifikacije */
+.toast {
+    position: fixed;
+    bottom: 2rem;
+    right: 2rem;
+    padding: 1rem 1.5rem;
+    border-radius: 8px;
+    color: white;
+    font-weight: 500;
+    z-index: 1000;
+    transition: opacity 0.3s;
+}
+
+.toast.success { background: #28a745; }
+.toast.error { background: #dc3545; }
+
+/* Pomoc */
+.hidden { display: none !important; }
+.message { margin-top: 1rem; text-align: center; font-size: 0.9rem; }
+.message.error { color: #dc3545; }
+.message.success { color: #28a745; }
+
+.ticket-code {
+    font-family: monospace;
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #e94560;
+}

@@ -111,5 +111,14 @@ services:
       - event-service
       - registration-service
 
+  # Frontend (port 8080)
+  frontend:
+    build:
+      context: ./frontend
+    ports:
+      - "8080:80"
+    depends_on:
+      - api-gateway
+
 volumes:
   postgres_data:
