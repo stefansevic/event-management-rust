@@ -63,6 +63,10 @@ async fn main() {
         .route("/api/registrations/event/{event_id}", get(handlers::reg_by_event))
         .route("/api/registrations/{id}", delete(handlers::reg_cancel))
         .route("/api/registrations/{id}/ticket", get(handlers::reg_ticket))
+        .route("/api/registrations/{id}/qr", get(handlers::reg_qr))
+        // Analitike
+        .route("/api/analytics/event/{event_id}", get(handlers::analytics_event))
+        .route("/api/analytics/overview", get(handlers::analytics_overview))
         .layer(cors)
         .with_state(state);
 

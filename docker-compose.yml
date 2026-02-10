@@ -73,6 +73,7 @@ services:
     environment:
       REGISTRATION_DATABASE_URL: postgres://postgres:password@postgres:5432/registration_db
       EVENT_SERVICE_URL: http://event-service:3003
+      QR_SERVICE_URL: http://qr-service:3005
       JWT_SECRET: super-tajni-kljuc-za-development
     ports:
       - "3004:3004"
@@ -81,6 +82,15 @@ services:
         condition: service_healthy
       event-service:
         condition: service_started
+      qr-service:
+        condition: service_started
+
+  # QR Service - Python (port 3005)
+  qr-service:
+    build:
+      context: ./qr-service
+    ports:
+      - "3005:3005"
 
   #  API Gateway (port 3000) 
   api-gateway:

@@ -3,7 +3,8 @@ use axum::{extract::{Path, State}, http::StatusCode, Json};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::models::{CountResult, EventServiceResponse, RegisterRequest, Registration};
+use axum::response::{IntoResponse, Response};
+use crate::models::{CountResult, EventServiceResponse, EventStats, OverviewStats, RegisterRequest, Registration};
 use crate::AppState;
 use shared::auth::AuthUser;
 use shared::models::ApiResponse;
@@ -250,4 +251,145 @@ pub async fn get_ticket(
             Json(ApiResponse::error(&format!("Greska: {}", e))),
         ),
     }
+}
+
+// ---- QR kod ----
+
+/// GET /registrations/:id/qr - generise QR kod za kartu (poziva Python QR servis)
+pub async fn get_ticket_qr(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Path(id): Path<Uuid>,
+) -> Response {
+    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+
+    let reg = sqlx::query_as::<_, Registration>(
+        "SELECT * FROM registrations WHERE id = $1",
+    )
+    .bind(id)
+    .fetch_optional(&state.db)
+    .await;
+
+    let reg = match reg {
+        Ok(Some(r)) => r,
+        Ok(None) => return (StatusCode::NOT_FOUND, "Karta ne postoji").into_response(),
+        Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, "Greska").into_response(),
+    };
+
+    if reg.user_id != user_id && user.0.role != "Admin" {
+        return (StatusCode::FORBIDDEN, "Nemate pristup").into_response();
+    }
+
+    // Pozivamo Python QR servis
+    let qr_url = format!("{}/qr", state.qr_service_url);
+    let qr_resp = reqwest::Client::new()
+        .post(&qr_url)
+        .json(&json!({
+            "ticket_code": reg.ticket_code,
+            "user_email": user.0.email,
+        }))
+        .send()
+        .await;
+
+    match qr_resp {
+        Ok(resp) if resp.status().is_success() => {
+            let bytes = resp.bytes().await.unwrap_or_default();
+            (
+                StatusCode::OK,
+                [(axum::http::header::CONTENT_TYPE, "image/png")],
+                bytes.to_vec(),
+            )
+                .into_response()
+        }
+        _ => (StatusCode::SERVICE_UNAVAILABLE, "QR servis nije dostupan").into_response(),
+    }
+}
+
+// ---- Analitike ----
+
+/// GET /analytics/event/:event_id - statistika za jedan dogadjaj
+pub async fn analytics_event(
+    user: AuthUser,
+    State(state): State<AppState>,
+    Path(event_id): Path<Uuid>,
+) -> Result<(StatusCode, Json<ApiResponse<EventStats>>), (StatusCode, String)> {
+    if user.0.role != "Organizer" && user.0.role != "Admin" {
+        return Err((StatusCode::FORBIDDEN, "Nemate dozvolu".to_string()));
+    }
+
+    let stats = sqlx::query_as::<_, EventStats>(
+        "SELECT
+            event_id,
+            COUNT(*) as total,
+            COUNT(*) FILTER (WHERE status = 'confirmed') as confirmed,
+            COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled
+         FROM registrations
+         WHERE event_id = $1
+         GROUP BY event_id",
+    )
+    .bind(event_id)
+    .fetch_optional(&state.db)
+    .await;
+
+    match stats {
+        Ok(Some(s)) => Ok((StatusCode::OK, Json(ApiResponse::success("Statistika", s)))),
+        Ok(None) => Ok((
+            StatusCode::OK,
+            Json(ApiResponse::success(
+                "Nema prijava",
+                EventStats {
+                    event_id,
+                    total: Some(0),
+                    confirmed: Some(0),
+                    cancelled: Some(0),
+                },
+            )),
+        )),
+        Err(e) => Ok((
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse::error(&format!("Greska: {}", e))),
+        )),
+    }
+}
+
+/// GET /analytics/overview - ukupna statistika sistema (samo admin)
+pub async fn analytics_overview(
+    user: AuthUser,
+    State(state): State<AppState>,
+) -> Result<(StatusCode, Json<ApiResponse<OverviewStats>>), (StatusCode, String)> {
+    shared::auth::require_role(&user.0, "Admin")?;
+
+    let total = sqlx::query_as::<_, CountResult>(
+        "SELECT COUNT(*) as count FROM registrations",
+    )
+    .fetch_one(&state.db).await
+    .unwrap_or(CountResult { count: Some(0) }).count.unwrap_or(0);
+
+    let confirmed = sqlx::query_as::<_, CountResult>(
+        "SELECT COUNT(*) as count FROM registrations WHERE status = 'confirmed'",
+    )
+    .fetch_one(&state.db).await
+    .unwrap_or(CountResult { count: Some(0) }).count.unwrap_or(0);
+
+    let unique_events = sqlx::query_as::<_, CountResult>(
+        "SELECT COUNT(DISTINCT event_id) as count FROM registrations",
+    )
+    .fetch_one(&state.db).await
+    .unwrap_or(CountResult { count: Some(0) }).count.unwrap_or(0);
+
+    let unique_users = sqlx::query_as::<_, CountResult>(
+        "SELECT COUNT(DISTINCT user_id) as count FROM registrations",
+    )
+    .fetch_one(&state.db).await
+    .unwrap_or(CountResult { count: Some(0) }).count.unwrap_or(0);
+
+    let stats = OverviewStats {
+        total_registrations: total,
+        total_confirmed: confirmed,
+        total_cancelled: total - confirmed,
+        unique_events,
+        unique_users,
+    };
+
+    Ok((StatusCode::OK, Json(ApiResponse::success("Pregled statistike", stats))))
 }

@@ -41,3 +41,22 @@ pub struct EventServiceResponse {
 pub struct CountResult {
     pub count: Option<i64>,
 }
+
+/// Statistika za jedan dogadjaj
+#[derive(Debug, Serialize, FromRow)]
+pub struct EventStats {
+    pub event_id: Uuid,
+    pub total: Option<i64>,
+    pub confirmed: Option<i64>,
+    pub cancelled: Option<i64>,
+}
+
+/// Ukupna statistika sistema
+#[derive(Debug, Serialize)]
+pub struct OverviewStats {
+    pub total_registrations: i64,
+    pub total_confirmed: i64,
+    pub total_cancelled: i64,
+    pub unique_events: i64,
+    pub unique_users: i64,
+}

@@ -1,3 +1,4 @@
+// Registration servis - prijave na dogadjaje, karte, QR kodovi, analitike
 
 mod db;
 mod handlers;
@@ -12,6 +13,7 @@ pub struct AppState {
     pub db: PgPool,
     pub jwt_secret: String,
     pub event_service_url: String,
+    pub qr_service_url: String,
 }
 
 impl HasJwtSecret for AppState {
@@ -34,12 +36,16 @@ async fn main() {
     let event_service_url = std::env::var("EVENT_SERVICE_URL")
         .unwrap_or_else(|_| "http://localhost:3003".to_string());
 
+    let qr_service_url = std::env::var("QR_SERVICE_URL")
+        .unwrap_or_else(|_| "http://localhost:3005".to_string());
+
     let pool = db::create_pool(&database_url).await;
 
     let state = AppState {
         db: pool,
         jwt_secret,
         event_service_url,
+        qr_service_url,
     };
 
     let app = Router::new()
@@ -49,6 +55,9 @@ async fn main() {
         .route("/registrations/event/{event_id}", get(handlers::event_registrations))
         .route("/registrations/{id}", delete(handlers::cancel_registration))
         .route("/registrations/{id}/ticket", get(handlers::get_ticket))
+        .route("/registrations/{id}/qr", get(handlers::get_ticket_qr))
+        .route("/analytics/event/{event_id}", get(handlers::analytics_event))
+        .route("/analytics/overview", get(handlers::analytics_overview))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3004")

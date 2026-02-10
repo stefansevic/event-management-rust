@@ -194,3 +194,34 @@ pub async fn reg_ticket(
     let url = format!("{}/registrations/{}/ticket", state.registration_url, id);
     forward_request(&state.client, "GET", &url, &headers, None).await
 }
+
+/// GET /api/registrations/:id/qr
+pub async fn reg_qr(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    req: Request,
+) -> Response {
+    let headers = req.headers().clone();
+    let url = format!("{}/registrations/{}/qr", state.registration_url, id);
+    forward_request(&state.client, "GET", &url, &headers, None).await
+}
+
+// ---- Analitike ----
+
+/// GET /api/analytics/event/:event_id
+pub async fn analytics_event(
+    State(state): State<AppState>,
+    Path(event_id): Path<String>,
+    req: Request,
+) -> Response {
+    let headers = req.headers().clone();
+    let url = format!("{}/analytics/event/{}", state.registration_url, event_id);
+    forward_request(&state.client, "GET", &url, &headers, None).await
+}
+
+/// GET /api/analytics/overview
+pub async fn analytics_overview(State(state): State<AppState>, req: Request) -> Response {
+    let headers = req.headers().clone();
+    let url = format!("{}/analytics/overview", state.registration_url);
+    forward_request(&state.client, "GET", &url, &headers, None).await
+}
