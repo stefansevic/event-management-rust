@@ -1,9 +1,8 @@
 
 use axum::{
-    body::Body,
     extract::{Path, Request, State},
-    http::{HeaderMap, StatusCode},
-    response::{IntoResponse, Response},
+    http::HeaderMap,
+    response::Response,
     Json,
 };
 use serde_json::json;
@@ -13,14 +12,13 @@ use crate::AppState;
 
 // citanje body-ja
 
-async fn read_body(req: Request) -> (HeaderMap, String, String) {
-    let method = req.method().to_string();
+async fn read_body(req: Request) -> (HeaderMap, String) {
     let headers = req.headers().clone();
     let body_bytes = axum::body::to_bytes(req.into_body(), 1024 * 1024)
         .await
         .unwrap_or_default();
     let body = String::from_utf8_lossy(&body_bytes).to_string();
-    (headers, method, body)
+    (headers, body)
 }
 
 
@@ -48,13 +46,13 @@ pub async fn health_check(State(state): State<AppState>) -> Json<serde_json::Val
 //  Auth rute 
 
 pub async fn auth_register(State(state): State<AppState>, req: Request) -> Response {
-    let (headers, _, body) = read_body(req).await;
+    let (headers, body) = read_body(req).await;
     let url = format!("{}/register", state.auth_url);
     forward_request(&state.client, "POST", &url, &headers, Some(body)).await
 }
 
 pub async fn auth_login(State(state): State<AppState>, req: Request) -> Response {
-    let (headers, _, body) = read_body(req).await;
+    let (headers, body) = read_body(req).await;
     let url = format!("{}/login", state.auth_url);
     forward_request(&state.client, "POST", &url, &headers, Some(body)).await
 }
@@ -74,7 +72,7 @@ pub async fn user_profile_get(State(state): State<AppState>, req: Request) -> Re
 }
 
 pub async fn user_profile_put(State(state): State<AppState>, req: Request) -> Response {
-    let (headers, _, body) = read_body(req).await;
+    let (headers, body) = read_body(req).await;
     let url = format!("{}/profile", state.user_url);
     forward_request(&state.client, "PUT", &url, &headers, Some(body)).await
 }
@@ -108,7 +106,7 @@ pub async fn user_profile_delete(
 //  Event rute 
 
 pub async fn event_create(State(state): State<AppState>, req: Request) -> Response {
-    let (headers, _, body) = read_body(req).await;
+    let (headers, body) = read_body(req).await;
     let url = format!("{}/events", state.event_url);
     forward_request(&state.client, "POST", &url, &headers, Some(body)).await
 }
@@ -136,7 +134,7 @@ pub async fn event_update(
     Path(id): Path<String>,
     req: Request,
 ) -> Response {
-    let (headers, _, body) = read_body(req).await;
+    let (headers, body) = read_body(req).await;
     let url = format!("{}/events/{}", state.event_url, id);
     forward_request(&state.client, "PUT", &url, &headers, Some(body)).await
 }
@@ -154,7 +152,7 @@ pub async fn event_delete(
 //  Registration rute 
 
 pub async fn reg_create(State(state): State<AppState>, req: Request) -> Response {
-    let (headers, _, body) = read_body(req).await;
+    let (headers, body) = read_body(req).await;
     let url = format!("{}/registrations", state.registration_url);
     forward_request(&state.client, "POST", &url, &headers, Some(body)).await
 }
@@ -195,7 +193,7 @@ pub async fn reg_ticket(
     forward_request(&state.client, "GET", &url, &headers, None).await
 }
 
-/// GET /api/registrations/:id/qr
+/// GET registration qr
 pub async fn reg_qr(
     State(state): State<AppState>,
     Path(id): Path<String>,
@@ -206,9 +204,9 @@ pub async fn reg_qr(
     forward_request(&state.client, "GET", &url, &headers, None).await
 }
 
-// ---- Analitike ----
+//  Analitike 
 
-/// GET /api/analytics/event/:event_id
+/// GET analytics event
 pub async fn analytics_event(
     State(state): State<AppState>,
     Path(event_id): Path<String>,
@@ -219,7 +217,7 @@ pub async fn analytics_event(
     forward_request(&state.client, "GET", &url, &headers, None).await
 }
 
-/// GET /api/analytics/overview
+/// GET analytics overview
 pub async fn analytics_overview(State(state): State<AppState>, req: Request) -> Response {
     let headers = req.headers().clone();
     let url = format!("{}/analytics/overview", state.registration_url);

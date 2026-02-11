@@ -1,12 +1,11 @@
-
-use axum::{extract::{Path, State}, http::StatusCode, Json};
+use axum::{extract::{Path, State}, http::{HeaderMap, StatusCode}, Json};
 use serde_json::json;
 use uuid::Uuid;
 
 use axum::response::{IntoResponse, Response};
 use crate::models::{CountResult, EventServiceResponse, EventStats, OverviewStats, RegisterRequest, Registration};
 use crate::AppState;
-use shared::auth::AuthUser;
+use shared::auth::{extract_claims, require_role};
 use shared::models::ApiResponse;
 
 /// GET health
@@ -19,11 +18,15 @@ pub async fn health_check() -> Json<serde_json::Value> {
 
 /// registration for event
 pub async fn register_for_event(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Json(req): Json<RegisterRequest>,
 ) -> (StatusCode, Json<ApiResponse<Registration>>) {
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
     // jel user vec prijavljen
     let existing = sqlx::query_as::<_, Registration>(
@@ -103,11 +106,15 @@ pub async fn register_for_event(
 
 /// Cancel registration
 pub async fn cancel_registration(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> (StatusCode, Json<ApiResponse<Registration>>) {
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
     // proveri jel postoji i pripada useru
     let existing = sqlx::query_as::<_, Registration>(
@@ -119,7 +126,7 @@ pub async fn cancel_registration(
 
     match existing {
         Ok(Some(reg)) => {
-            if reg.user_id != user_id && user.0.role != "Admin" {
+            if reg.user_id != user_id && claims.role != "Admin" {
                 return (
                     StatusCode::FORBIDDEN,
                     Json(ApiResponse::error("Ne mozete otkazati tudju prijavu")),
@@ -157,10 +164,14 @@ pub async fn cancel_registration(
 
 /// get my registrations
 pub async fn my_registrations(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
 ) -> (StatusCode, Json<ApiResponse<Vec<Registration>>>) {
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
     let result = sqlx::query_as::<_, Registration>(
         "SELECT * FROM registrations WHERE user_id = $1 ORDER BY created_at DESC",
@@ -183,12 +194,16 @@ pub async fn my_registrations(
 
 /// get all registrations for event
 pub async fn event_registrations(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(event_id): Path<Uuid>,
 ) -> (StatusCode, Json<ApiResponse<Vec<Registration>>>) {
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
     // organizer i admin mogu da vide listu registracija
-    if user.0.role != "Organizer" && user.0.role != "Admin" {
+    if claims.role != "Organizer" && claims.role != "Admin" {
         return (
             StatusCode::FORBIDDEN,
             Json(ApiResponse::error("Nemate dozvolu")),
@@ -216,11 +231,15 @@ pub async fn event_registrations(
 
 /// GET registration ticket
 pub async fn get_ticket(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> (StatusCode, Json<ApiResponse<Registration>>) {
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
     let result = sqlx::query_as::<_, Registration>(
         "SELECT * FROM registrations WHERE id = $1",
@@ -231,7 +250,7 @@ pub async fn get_ticket(
 
     match result {
         Ok(Some(reg)) => {
-            if reg.user_id != user_id && user.0.role != "Admin" {
+            if reg.user_id != user_id && claims.role != "Admin" {
                 return (
                     StatusCode::FORBIDDEN,
                     Json(ApiResponse::error("Nemate pristup ovoj karti")),
@@ -257,11 +276,15 @@ pub async fn get_ticket(
 
 /// GET /registrations/:id/qr - generise QR kod za kartu (poziva Python QR servis)
 pub async fn get_ticket_qr(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Response {
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, msg).into_response(),
+    };
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
     let reg = sqlx::query_as::<_, Registration>(
         "SELECT * FROM registrations WHERE id = $1",
@@ -276,7 +299,7 @@ pub async fn get_ticket_qr(
         Err(_) => return (StatusCode::INTERNAL_SERVER_ERROR, "Greska").into_response(),
     };
 
-    if reg.user_id != user_id && user.0.role != "Admin" {
+    if reg.user_id != user_id && claims.role != "Admin" {
         return (StatusCode::FORBIDDEN, "Nemate pristup").into_response();
     }
 
@@ -286,7 +309,7 @@ pub async fn get_ticket_qr(
         .post(&qr_url)
         .json(&json!({
             "ticket_code": reg.ticket_code,
-            "user_email": user.0.email,
+            "user_email": claims.email,
         }))
         .send()
         .await;
@@ -309,11 +332,12 @@ pub async fn get_ticket_qr(
 
 /// GET /analytics/event/:event_id - statistika za jedan dogadjaj
 pub async fn analytics_event(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(event_id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<ApiResponse<EventStats>>), (StatusCode, String)> {
-    if user.0.role != "Organizer" && user.0.role != "Admin" {
+    let claims = extract_claims(&headers, &state.jwt_secret)?;
+    if claims.role != "Organizer" && claims.role != "Admin" {
         return Err((StatusCode::FORBIDDEN, "Nemate dozvolu".to_string()));
     }
 
@@ -354,10 +378,11 @@ pub async fn analytics_event(
 
 /// GET /analytics/overview - ukupna statistika sistema (samo admin)
 pub async fn analytics_overview(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<ApiResponse<OverviewStats>>), (StatusCode, String)> {
-    shared::auth::require_role(&user.0, "Admin")?;
+    let claims = extract_claims(&headers, &state.jwt_secret)?;
+    require_role(&claims, "Admin")?;
 
     let total = sqlx::query_as::<_, CountResult>(
         "SELECT COUNT(*) as count FROM registrations",

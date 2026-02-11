@@ -1,9 +1,6 @@
 // JWT autentifikacija
 
-use axum::{
-    extract::FromRequestParts,
-    http::{header, request::Parts, StatusCode},
-};
+use axum::http::{header, HeaderMap, StatusCode};
 use chrono::Utc;
 use jsonwebtoken::{decode, encode, DecodingKey, EncodingKey, Header, Validation};
 use serde::{Deserialize, Serialize};
@@ -18,7 +15,7 @@ pub struct Claims {
     pub iat: usize,
 }
 
-/// Pravi novi JWT token za korisnika
+/// Pravi novi JWT token za korisnika (traje 24h)
 pub fn create_token(
     user_id: &str,
     email: &str,
@@ -42,7 +39,7 @@ pub fn create_token(
     )
 }
 
-/// Cita i proverava JWT token, vraca podatke iz njega
+/// Cita i proverava JWT token
 pub fn validate_token(
     token: &str,
     secret: &str,
@@ -55,54 +52,34 @@ pub fn validate_token(
     Ok(token_data.claims)
 }
 
-// Auth Extractor
-
-pub trait HasJwtSecret {
-    fn jwt_secret(&self) -> &str;
-}
-
-pub struct AuthUser(pub Claims);
-
-impl<S> FromRequestParts<S> for AuthUser
-where
-    S: Send + Sync + HasJwtSecret,
-{
-    type Rejection = (StatusCode, String);
-
-    async fn from_request_parts(
-        parts: &mut Parts,
-        state: &S,
-    ) -> Result<Self, Self::Rejection> {
-        // Uzimamo Auth header
-        let auth_header = parts
-            .headers
-            .get(header::AUTHORIZATION)
-            .and_then(|v| v.to_str().ok())
-            .ok_or((
-                StatusCode::UNAUTHORIZED,
-                "Nedostaje Authorization header".to_string(),
-            ))?;
-
-        // Ocekujemo format "Bearer <token>"
-        let token = auth_header.strip_prefix("Bearer ").ok_or((
+/// Izvlaci Claims iz Authorization headera
+/// Koristi se u handlerima: let claims = extract_claims(&headers, &state.jwt_secret)?;
+pub fn extract_claims(
+    headers: &HeaderMap,
+    jwt_secret: &str,
+) -> Result<Claims, (StatusCode, String)> {
+    let auth_header = headers
+        .get(header::AUTHORIZATION)
+        .and_then(|v| v.to_str().ok())
+        .ok_or((
             StatusCode::UNAUTHORIZED,
-            "Format mora biti: Bearer <token>".to_string(),
+            "Nedostaje Authorization header".to_string(),
         ))?;
 
-        // Validiramo token
-        let claims = validate_token(token, state.jwt_secret()).map_err(|_| {
-            (
-                StatusCode::UNAUTHORIZED,
-                "Token je istekao ili nije validan".to_string(),
-            )
-        })?;
+    let token = auth_header.strip_prefix("Bearer ").ok_or((
+        StatusCode::UNAUTHORIZED,
+        "Format mora biti: Bearer <token>".to_string(),
+    ))?;
 
-        Ok(AuthUser(claims))
-    }
+    validate_token(token, jwt_secret).map_err(|_| {
+        (
+            StatusCode::UNAUTHORIZED,
+            "Token je istekao ili nije validan".to_string(),
+        )
+    })
 }
 
-/// Provera role
-/// Admin uvek prolazi.
+/// Proverava da li korisnik ima odredjenu ulogu. Admin uvek prolazi.
 pub fn require_role(claims: &Claims, required: &str) -> Result<(), (StatusCode, String)> {
     if claims.role == required || claims.role == "Admin" {
         Ok(())

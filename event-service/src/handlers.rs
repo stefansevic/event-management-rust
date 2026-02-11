@@ -1,12 +1,12 @@
 // Handleri za event servis
 
-use axum::{extract::{Path, Query, State}, http::StatusCode, Json};
+use axum::{extract::{Path, Query, State}, http::{HeaderMap, StatusCode}, Json};
 use serde_json::json;
 use uuid::Uuid;
 
 use crate::models::{CreateEventRequest, Event, EventQuery, UpdateEventRequest};
 use crate::AppState;
-use shared::auth::{require_role, AuthUser};
+use shared::auth::{extract_claims, require_role};
 use shared::models::ApiResponse;
 
 /// GET health
@@ -19,13 +19,14 @@ pub async fn health_check() -> Json<serde_json::Value> {
 
 /// create event
 pub async fn create_event(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Json(req): Json<CreateEventRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<Event>>), (StatusCode, String)> {
-    require_role(&user.0, "Organizer")?;
+    let claims = extract_claims(&headers, &state.jwt_secret)?;
+    require_role(&claims, "Organizer")?;
 
-    let organizer_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+    let organizer_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
     let result = sqlx::query_as::<_, Event>(
         "INSERT INTO events (id, organizer_id, title, description, location, date_time, capacity, category)
@@ -135,11 +136,16 @@ pub async fn get_event(
 
 /// update event
 pub async fn update_event(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
     Json(req): Json<UpdateEventRequest>,
 ) -> (StatusCode, Json<ApiResponse<Event>>) {
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+
     // dal postoji
     let existing = sqlx::query_as::<_, Event>("SELECT * FROM events WHERE id = $1")
         .bind(id)
@@ -153,8 +159,8 @@ pub async fn update_event(
     };
 
     // DAC access
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
-    if event.organizer_id != user_id && user.0.role != "Admin" {
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
+    if event.organizer_id != user_id && claims.role != "Admin" {
         return (StatusCode::FORBIDDEN, Json(ApiResponse::error("Nemate dozvolu da menjate ovaj dogadjaj")));
     }
 
@@ -195,10 +201,15 @@ pub async fn update_event(
 
 /// delete event
 pub async fn delete_event(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> (StatusCode, Json<ApiResponse<String>>) {
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+
     let existing = sqlx::query_as::<_, Event>("SELECT * FROM events WHERE id = $1")
         .bind(id)
         .fetch_optional(&state.db)
@@ -210,8 +221,8 @@ pub async fn delete_event(
         Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::error(&format!("Greska: {}", e)))),
     };
 
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
-    if event.organizer_id != user_id && user.0.role != "Admin" {
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
+    if event.organizer_id != user_id && claims.role != "Admin" {
         return (StatusCode::FORBIDDEN, Json(ApiResponse::error("Nemate dozvolu da obrisete ovaj dogadjaj")));
     }
 

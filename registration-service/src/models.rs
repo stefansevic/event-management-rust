@@ -11,7 +11,7 @@ pub struct Registration {
     pub event_id: Uuid,
     pub user_id: Uuid,
     pub ticket_code: String,
-    pub status: String,        // accepted or rejected
+    pub status: String,        // confirmed ili cancelled
     pub created_at: NaiveDateTime,
 }
 
@@ -21,8 +21,9 @@ pub struct RegisterRequest {
     pub event_id: Uuid,
 }
 
-/// proveri jel ima mesta i poosalji odgovor
+/// Podaci o eventu koje dobijamo od event servisa
 #[derive(Debug, Deserialize)]
+#[allow(dead_code)]
 pub struct EventData {
     pub id: Uuid,
     pub title: String,

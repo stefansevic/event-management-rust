@@ -1,13 +1,13 @@
 // Handleri za auth rute
 
-use axum::{extract::State, http::StatusCode, Json};
+use axum::{extract::State, http::HeaderMap, http::StatusCode, Json};
 use bcrypt::{hash, verify, DEFAULT_COST};
 use serde_json::json;
 use uuid::Uuid;
 
 use crate::models::{AuthResponse, LoginRequest, RegisterRequest, User};
 use crate::AppState;
-use shared::auth::{create_token, AuthUser};
+use shared::auth::{create_token, extract_claims};
 use shared::models::ApiResponse;
 
 /// GET /health
@@ -21,15 +21,16 @@ pub async fn health_check() -> Json<serde_json::Value> {
 /// me - returna podatke o logovanom korisniku
 
 pub async fn me(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
 ) -> (StatusCode, Json<ApiResponse<AuthResponse>>) {
-    // kupimo claim-ove iz tokena
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+
     let result = sqlx::query_as::<_, User>("SELECT * FROM users WHERE id = $1")
-        .bind(
-            uuid::Uuid::parse_str(&user.0.sub)
-                .unwrap_or_default(),
-        )
+        .bind(uuid::Uuid::parse_str(&claims.sub).unwrap_or_default())
         .fetch_optional(&state.db)
         .await;
 
@@ -41,15 +42,9 @@ pub async fn me(
                 email: db_user.email,
                 role: db_user.role,
             };
-            (
-                StatusCode::OK,
-                Json(ApiResponse::success("Korisnik pronadjen", response)),
-            )
+            (StatusCode::OK, Json(ApiResponse::success("Korisnik pronadjen", response)))
         }
-        _ => (
-            StatusCode::NOT_FOUND,
-            Json(ApiResponse::error("Korisnik ne postoji u bazi")),
-        ),
+        _ => (StatusCode::NOT_FOUND, Json(ApiResponse::error("Korisnik ne postoji u bazi"))),
     }
 }
 

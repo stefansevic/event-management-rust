@@ -187,13 +187,30 @@ async function loadMyRegistrations() {
                 <p><strong>Event ID:</strong> ${reg.event_id}</p>
                 <p><strong>Datum prijave:</strong> ${formatDate(reg.created_at)}</p>
                 <div class="meta">
-                    <a href="${API.replace('/api','')}/api/registrations/${reg.id}/qr" target="_blank" class="btn btn-secondary btn-small">QR Kod</a>
+                    <button class="btn btn-secondary btn-small" onclick="downloadQR('${reg.id}')">QR Kod</button>
                     ${reg.status === "confirmed" ? `<button class="btn btn-danger btn-small" onclick="cancelRegistration('${reg.id}')">Otkazi</button>` : ""}
                 </div>
             </div>
         `).join("");
     } else {
         container.innerHTML = "<p>Nemate prijava.</p>";
+    }
+}
+
+async function downloadQR(regId) {
+    try {
+        const res = await fetch(API + "/registrations/" + regId + "/qr", {
+            headers: token ? { "Authorization": "Bearer " + token } : {},
+        });
+        if (res.ok) {
+            const blob = await res.blob();
+            const url = URL.createObjectURL(blob);
+            window.open(url, "_blank");
+        } else {
+            toast("Greska pri generisanju QR koda", "error");
+        }
+    } catch {
+        toast("QR servis nije dostupan", "error");
     }
 }
 

@@ -1,12 +1,12 @@
 // Handleri za user servis
 
-use axum::{extract::{Path, State}, http::StatusCode, Json};
+use axum::{extract::{Path, State}, http::{HeaderMap, StatusCode}, Json};
 use serde_json::json;
 use uuid::Uuid;
 
 use crate::models::{ProfileRequest, UserProfile};
 use crate::AppState;
-use shared::auth::{require_role, AuthUser};
+use shared::auth::{extract_claims, require_role};
 use shared::models::ApiResponse;
 
 /// GET /health
@@ -19,10 +19,14 @@ pub async fn health_check() -> Json<serde_json::Value> {
 
 /// GET /profile 
 pub async fn get_my_profile(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
 ) -> (StatusCode, Json<ApiResponse<UserProfile>>) {
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
     let result = sqlx::query_as::<_, UserProfile>(
         "SELECT * FROM user_profiles WHERE user_id = $1",
@@ -49,11 +53,15 @@ pub async fn get_my_profile(
 
 /// PUT /profile - create/update profile
 pub async fn upsert_profile(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Json(req): Json<ProfileRequest>,
 ) -> (StatusCode, Json<ApiResponse<UserProfile>>) {
-    let user_id = Uuid::parse_str(&user.0.sub).unwrap_or_default();
+    let claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
+    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
     // create ako ne postoji, update ako postoji
     let result = sqlx::query_as::<_, UserProfile>(
@@ -84,10 +92,11 @@ pub async fn upsert_profile(
 
 /// GET /profiles
 pub async fn list_profiles(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
 ) -> Result<(StatusCode, Json<ApiResponse<Vec<UserProfile>>>), (StatusCode, String)> {
-    require_role(&user.0, "Admin")?;
+    let claims = extract_claims(&headers, &state.jwt_secret)?;
+    require_role(&claims, "Admin")?;
 
     let profiles = sqlx::query_as::<_, UserProfile>("SELECT * FROM user_profiles")
         .fetch_all(&state.db)
@@ -107,10 +116,14 @@ pub async fn list_profiles(
 
 /// GET /profiles po id
 pub async fn get_profile_by_id(
-    _user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> (StatusCode, Json<ApiResponse<UserProfile>>) {
+    let _claims = match extract_claims(&headers, &state.jwt_secret) {
+        Ok(c) => c,
+        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
+    };
     let result = sqlx::query_as::<_, UserProfile>(
         "SELECT * FROM user_profiles WHERE user_id = $1",
     )
@@ -136,11 +149,12 @@ pub async fn get_profile_by_id(
 
 /// DELETE /profiles
 pub async fn delete_profile(
-    user: AuthUser,
+    headers: HeaderMap,
     State(state): State<AppState>,
     Path(id): Path<Uuid>,
 ) -> Result<(StatusCode, Json<ApiResponse<String>>), (StatusCode, String)> {
-    require_role(&user.0, "Admin")?;
+    let claims = extract_claims(&headers, &state.jwt_secret)?;
+    require_role(&claims, "Admin")?;
 
     let result = sqlx::query("DELETE FROM user_profiles WHERE user_id = $1")
         .bind(id)

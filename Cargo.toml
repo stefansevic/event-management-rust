@@ -1,6 +1,7 @@
 # Workspace config - ovim povezujemo sve servise u jedan projekat
 
 [workspace]
+resolver = "2"
 members = [
     "shared",
     "auth-service",

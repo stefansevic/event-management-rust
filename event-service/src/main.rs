@@ -5,19 +5,12 @@ mod handlers;
 mod models;
 
 use axum::{routing::{get, post, put, delete}, Router};
-use shared::auth::HasJwtSecret;
 use sqlx::PgPool;
 
 #[derive(Clone)]
 pub struct AppState {
     pub db: PgPool,
     pub jwt_secret: String,
-}
-
-impl HasJwtSecret for AppState {
-    fn jwt_secret(&self) -> &str {
-        &self.jwt_secret
-    }
 }
 
 #[tokio::main]

@@ -5,7 +5,6 @@ mod handlers;
 mod models;
 
 use axum::{routing::{get, post}, Router};
-use shared::auth::HasJwtSecret;
 use sqlx::PgPool;
 
 /// Stanje appa 
@@ -13,13 +12,6 @@ use sqlx::PgPool;
 pub struct AppState {
     pub db: PgPool,
     pub jwt_secret: String,
-}
-
-//  HasJwtSecret da bi AuthUser extractor radio
-impl HasJwtSecret for AppState {
-    fn jwt_secret(&self) -> &str {
-        &self.jwt_secret
-    }
 }
 
 #[tokio::main]
