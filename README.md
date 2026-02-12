@@ -9,10 +9,7 @@ A microservices-based web application for managing events (conferences, workshop
 - **Events** — Create, edit, delete events; optional image upload (stored as base64); category and search filters; past dates rejected
 - **Registrations** — Sign up for events, cancel registration; capacity checks; unique ticket codes
 - **Tickets & QR codes** — Download ticket info and QR code per registration (Python QR service)
-<<<<<<< HEAD
-=======
 - **Analytics** — Overview stats (total registrations, confirmed, cancelled, unique events/users) and per-event stats
->>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
 - **Admin** — Seeded admin account; delete events; when an event is deleted, all its registrations are auto-cancelled and shown as “Event removed” in My Registrations
 
 ## Architecture
@@ -24,26 +21,15 @@ A microservices-based web application for managing events (conferences, workshop
                     └──────┬──────┘
                            │
                     ┌──────▼──────┐
-<<<<<<< HEAD
-                    │ API Gateway│  (port 3000)
-=======
                     │ API Gateway │  (port 3000)
->>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
                     └──────┬──────┘
                            │
          ┌─────────────────┼─────────────────┐
          │                 │                 │
-<<<<<<< HEAD
-    ┌────▼────┐      ┌─────▼─────┐      ┌─────▼─────┐
-    │  Auth   │      │   User    │      │   Event   │
-    │ (3001)  │      │  (3002)  │      │  (3003)   │
-    └────┬────┘      └──────────┘      └─────┬─────┘
-=======
     ┌────▼────┐      ┌─────▼────┐      ┌─────▼─────┐
     │  Auth   │      │   User   │      │   Event   │
     │ (3001)  │      │  (3002)  │      │  (3003)   │
     └────┬────┘      └──────────┘      └──────┬────┘
->>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
          │                                    │
          │  ┌─────────────────────────────────┤
          │  │                          ┌───────▼───────┐
@@ -51,17 +37,6 @@ A microservices-based web application for managing events (conferences, workshop
          │  │                          │   (3004)      │
          │  │                          └───────┬───────┘
          │  │                                  │
-<<<<<<< HEAD
-         │  │                          ┌───────▼───────┐
-         │  │                          │  QR Service  │
-         │  │                          │   (3005)      │
-         │  │                          └──────────────┘
-         │  │
-    ┌────▼──▼─────────────────────────────────────────┐
-    │              PostgreSQL (5432)                    │
-    │  auth_db | user_db | event_db | registration_db  │
-    └──────────────────────────────────────────────────┘
-=======
          │  │                          ┌───────▼──────┐
          │  │                          │  QR Service  │
          │  │                          │   (3005)     │
@@ -71,7 +46,6 @@ A microservices-based web application for managing events (conferences, workshop
     │              PostgreSQL (5432)                  │
     │  auth_db | user_db | event_db | registration_db │
     └─────────────────────────────────────────────────┘
->>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
 ```
 
 - **Auth Service** — Registration, login, JWT issue/validation, roles. Seeds admin `saske@admin.com` / `saske1` if missing.
@@ -90,11 +64,7 @@ Each service (except QR) has its own PostgreSQL database. Inter-service calls us
 | Backend     | Rust (Axum), Tokio, SQLx, Serde, JWT |
 | QR service  | Python 3, Flask, qrcode              |
 | Databases   | PostgreSQL 16                        |
-<<<<<<< HEAD
-| Frontend    | HTML, CSS, JavaScript (vanilla)       |
-=======
-| Frontend    | HTML, CSS, JavaScript                |
->>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
+| Frontend    | HTML, CSS, JavaScript (vanilla)      |
 | Deployment  | Docker, Docker Compose               |
 
 ## Prerequisites
@@ -149,22 +119,19 @@ Base URL: `http://localhost:3000/api`
 |--------|------|-------------|
 | POST   | `/auth/register` | Register (email, password) |
 | POST   | `/auth/login`    | Login; returns JWT |
-| GET    | `/auth/me`      | Current user (requires JWT) |
-| GET/PUT| `/users/profile`| My profile |
+| GET    | `/auth/me`       | Current user (requires JWT) |
+| GET/PUT| `/users/profile` | My profile |
 | GET    | `/users/profiles` | List profiles (admin) |
 | GET/DELETE | `/users/profiles/:id` | Get/delete profile (admin) |
-| GET/POST | `/events`     | List events (query: category, search) / Create event (JWT, Organizer/Admin) |
+| GET/POST | `/events`      | List events (query: category, search) / Create event (JWT, Organizer/Admin) |
 | GET/PUT/DELETE | `/events/:id` | Get / Update / Delete event |
 | POST   | `/registrations` | Register for event (body: `event_id`) |
 | GET    | `/registrations/my` | My registrations |
 | DELETE | `/registrations/:id` | Cancel registration |
 | GET    | `/registrations/:id/ticket` | Ticket details |
 | GET    | `/registrations/:id/qr` | QR code image |
-<<<<<<< HEAD
-=======
 | GET    | `/analytics/overview` | Global stats |
 | GET    | `/analytics/event/:event_id` | Stats for one event |
->>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
 
 All protected routes expect header: `Authorization: Bearer <token>`.
 
@@ -172,33 +139,18 @@ All protected routes expect header: `Authorization: Bearer <token>`.
 
 ```
 ntp-event-management-system/
-├── api-gateway/          # Rust; routes and proxy to backend
-├── auth-service/        # Rust; register, login, JWT
-├── user-service/        # Rust; profiles
-├── event-service/       # Rust; events + image_url
-├── registration-service/# Rust; registrations, tickets
-├── qr-service/          # Python; QR image generation
-├── shared/               # Rust lib; JWT helpers, ApiResponse, AppError
-├── frontend/             # Static site (HTML/CSS/JS)
+├── api-gateway/           # Rust; routes and proxy to backend
+├── auth-service/          # Rust; register, login, JWT
+├── user-service/          # Rust; profiles
+├── event-service/         # Rust; events + image_url
+├── registration-service/  # Rust; registrations, tickets
+├── qr-service/            # Python; QR image generation
+├── shared/                # Rust lib; JWT helpers, ApiResponse, AppError
+├── frontend/              # Static site (HTML/CSS/JS)
 ├── scripts/
-│   └── init-db.sh       # PostgreSQL init (all DBs + tables)
+│   └── init-db.sh         # PostgreSQL init (all DBs + tables)
 ├── docker-compose.yml
-├── Dockerfile            # Multi-service Rust build
-├── Cargo.toml            # Workspace root
+├── Dockerfile             # Multi-service Rust build
+├── Cargo.toml             # Workspace root
 └── .env.example
 ```
-<<<<<<< HEAD
-
-## Running Locally (without Docker)
-
-1. Start PostgreSQL and create databases: `auth_db`, `user_db`, `event_db`, `registration_db` (or run `scripts/init-db.sh` logic once).
-2. Copy `.env.example` to `.env` and set `*_DATABASE_URL` and `JWT_SECRET`.
-3. Run each service (e.g. `cargo run -p auth-service`, then user, event, registration, api-gateway).
-4. Run QR service: `cd qr-service && pip install -r requirements.txt && python app.py`.
-5. Serve frontend (e.g. `npx serve frontend` or open `frontend/index.html`); ensure API base URL in `frontend/app.js` points to your gateway (e.g. `http://localhost:3000/api`).
-
-## License
-
-This project is for educational purposes (NTP course).
-=======
->>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
