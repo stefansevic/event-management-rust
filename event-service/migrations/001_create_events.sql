@@ -9,6 +9,7 @@ CREATE TABLE IF NOT EXISTS events (
     date_time TIMESTAMP NOT NULL,
     capacity INT NOT NULL DEFAULT 100,
     category VARCHAR(100) NOT NULL DEFAULT 'Ostalo',
+    image_url TEXT,
     created_at TIMESTAMP NOT NULL DEFAULT NOW(),
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );

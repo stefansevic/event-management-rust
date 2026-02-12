@@ -132,6 +132,7 @@ async function loadEvents() {
             const alreadyRegistered = myEventIds.includes(evt.id);
             return `
             <div class="card">
+                ${evt.image_url ? `<div class="event-image-wrap"><img src="${evt.image_url}" alt="${esc(evt.title)}" class="event-image"></div>` : ""}
                 <span class="badge">${esc(evt.category)}</span>
                 <h3>${esc(evt.title)}</h3>
                 <p>${esc(evt.description)}</p>
@@ -167,6 +168,15 @@ function searchEvents() {
     loadEvents();
 }
 
+function readFileAsBase64(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = () => resolve(reader.result); 
+        reader.onerror = () => reject(reader.error);
+        reader.readAsDataURL(file);
+    });
+}
+
 async function handleCreateEvent(e) {
     e.preventDefault();
 
@@ -179,6 +189,18 @@ async function handleCreateEvent(e) {
         category: document.getElementById("evt-category").value,
     };
 
+    // Ako je korisnik izabrao sliku, ucitaj je kao base64
+    const imageInput = document.getElementById("evt-image");
+    if (imageInput && imageInput.files.length > 0) {
+        const file = imageInput.files[0];
+        // Ogranicenje: max 3MB
+        if (file.size > 3 * 1024 * 1024) {
+            toast("Slika je prevelika (max 3MB)", "error");
+            return;
+        }
+        data.image_url = await readFileAsBase64(file);
+    }
+
     const res = await apiPost("/events", data);
     if (res.success) {
         toast("Dogadjaj kreiran!", "success");
@@ -188,6 +210,7 @@ async function handleCreateEvent(e) {
         document.getElementById("evt-description").value = "";
         document.getElementById("evt-location").value = "";
         document.getElementById("evt-datetime").value = "";
+        if (imageInput) imageInput.value = "";
     } else {
         toast(res.message, "error");
     }

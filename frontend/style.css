@@ -208,6 +208,12 @@ h3 {
     flex: 1;
 }
 
+.file-label {
+    font-size: 0.9rem;
+    color: #555;
+    align-self: center;
+}
+
 /* Kartice */
 .cards-grid {
     display: grid;
@@ -221,10 +227,27 @@ h3 {
     padding: 1.5rem;
     box-shadow: 0 2px 12px rgba(0,0,0,0.06);
     transition: transform 0.15s;
+    overflow: hidden;
 }
 
 .card:hover {
     transform: translateY(-2px);
+}
+
+.event-image-wrap {
+    width: 100%;
+    height: 180px;
+    margin-bottom: 0.8rem;
+    overflow: hidden;
+    border-radius: 8px;
+}
+
+.event-image {
+    display: block;
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    object-position: center;
 }
 
 .card h3 {

@@ -48,6 +48,7 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname event_db <<-EOSQL
         date_time TIMESTAMP NOT NULL,
         capacity INT NOT NULL DEFAULT 100,
         category VARCHAR(100) NOT NULL DEFAULT 'Ostalo',
+        image_url TEXT,
         created_at TIMESTAMP NOT NULL DEFAULT NOW(),
         updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     );

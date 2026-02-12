@@ -14,7 +14,7 @@ use crate::AppState;
 
 async fn read_body(req: Request) -> (HeaderMap, String) {
     let headers = req.headers().clone();
-    let body_bytes = axum::body::to_bytes(req.into_body(), 1024 * 1024)
+    let body_bytes = axum::body::to_bytes(req.into_body(), 5 * 1024 * 1024)
         .await
         .unwrap_or_default();
     let body = String::from_utf8_lossy(&body_bytes).to_string();

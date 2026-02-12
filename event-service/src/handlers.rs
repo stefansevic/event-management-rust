@@ -37,8 +37,8 @@ pub async fn create_event(
     }
 
     let result = sqlx::query_as::<_, Event>(
-        "INSERT INTO events (id, organizer_id, title, description, location, date_time, capacity, category)
-         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)
+        "INSERT INTO events (id, organizer_id, title, description, location, date_time, capacity, category, image_url)
+         VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7, $8)
          RETURNING *",
     )
     .bind(organizer_id)
@@ -48,6 +48,7 @@ pub async fn create_event(
     .bind(req.date_time)
     .bind(req.capacity)
     .bind(&req.category)
+    .bind(&req.image_url)
     .fetch_one(&state.db)
     .await;
 
@@ -181,6 +182,7 @@ pub async fn update_event(
             date_time = COALESCE($5, date_time),
             capacity = COALESCE($6, capacity),
             category = COALESCE($7, category),
+            image_url = COALESCE($8, image_url),
             updated_at = NOW()
          WHERE id = $1
          RETURNING *",
@@ -192,6 +194,7 @@ pub async fn update_event(
     .bind(req.date_time)
     .bind(req.capacity)
     .bind(&req.category)
+    .bind(&req.image_url)
     .fetch_one(&state.db)
     .await;
 

@@ -16,6 +16,7 @@ pub struct Event {
     pub date_time: NaiveDateTime,
     pub capacity: i32,
     pub category: String,
+    pub image_url: Option<String>,
     pub created_at: NaiveDateTime,
     pub updated_at: NaiveDateTime,
 }
@@ -29,6 +30,7 @@ pub struct CreateEventRequest {
     pub date_time: NaiveDateTime,
     pub capacity: i32,
     pub category: String,
+    pub image_url: Option<String>,
 }
 
 /// update req
@@ -40,6 +42,7 @@ pub struct UpdateEventRequest {
     pub date_time: Option<NaiveDateTime>,
     pub capacity: Option<i32>,
     pub category: Option<String>,
+    pub image_url: Option<String>,
 }
 
 /// Query params za search
