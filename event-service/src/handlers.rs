@@ -237,6 +237,12 @@ pub async fn delete_event(
         return (StatusCode::FORBIDDEN, Json(ApiResponse::error("Nemate dozvolu da obrisete ovaj dogadjaj")));
     }
 
+    // Otkazi sve prijave za ovaj dogadjaj pre brisanja
+    let cancel_url = format!("{}/internal/event/{}/cancel-registrations", state.registration_service_url, id);
+    if let Err(e) = state.http_client.post(&cancel_url).send().await {
+        tracing::warn!("Nisam uspeo da otkazem prijave u registration-service: {}", e);
+    }
+
     let _ = sqlx::query("DELETE FROM events WHERE id = $1")
         .bind(id)
         .execute(&state.db)

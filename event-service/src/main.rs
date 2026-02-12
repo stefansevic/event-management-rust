@@ -11,6 +11,8 @@ use sqlx::PgPool;
 pub struct AppState {
     pub db: PgPool,
     pub jwt_secret: String,
+    pub registration_service_url: String,
+    pub http_client: reqwest::Client,
 }
 
 #[tokio::main]
@@ -24,11 +26,17 @@ async fn main() {
     let jwt_secret = std::env::var("JWT_SECRET")
         .expect("JWT_SECRET mora biti postavljen u .env");
 
+    let registration_service_url = std::env::var("REGISTRATION_SERVICE_URL")
+        .unwrap_or_else(|_| "http://localhost:3004".to_string());
+
     let pool = db::create_pool(&database_url).await;
+    let http_client = reqwest::Client::new();
 
     let state = AppState {
         db: pool,
         jwt_secret,
+        registration_service_url,
+        http_client,
     };
 
     let app = Router::new()

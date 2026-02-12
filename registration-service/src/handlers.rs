@@ -178,6 +178,31 @@ pub async fn cancel_registration(
     }
 }
 
+/// Internal: otkazuje sve prijave za dogadjaj (poziva event-service pri brisanju dogadjaja)
+pub async fn cancel_registrations_for_event(
+    State(state): State<AppState>,
+    Path(event_id): Path<Uuid>,
+) -> (StatusCode, Json<ApiResponse<serde_json::Value>>) {
+    let result = sqlx::query("UPDATE registrations SET status = 'cancelled' WHERE event_id = $1")
+        .bind(event_id)
+        .execute(&state.db)
+        .await;
+
+    match result {
+        Ok(rows) => (
+            StatusCode::OK,
+            Json(ApiResponse::success(
+                "Prijave otkazane",
+                json!({ "updated": rows.rows_affected() }),
+            )),
+        ),
+        Err(e) => (
+            StatusCode::INTERNAL_SERVER_ERROR,
+            Json(ApiResponse::error(&format!("Greska: {}", e))),
+        ),
+    }
+}
+
 /// get my registrations
 pub async fn my_registrations(
     headers: HeaderMap,

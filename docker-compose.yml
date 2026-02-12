@@ -58,6 +58,7 @@ services:
     environment:
       EVENT_DATABASE_URL: postgres://postgres:password@postgres:5432/event_db
       JWT_SECRET: super-tajni-kljuc-za-development
+      REGISTRATION_SERVICE_URL: http://registration-service:3004
     ports:
       - "3003:3003"
     depends_on:

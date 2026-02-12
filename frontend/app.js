@@ -240,18 +240,23 @@ async function loadMyRegistrations() {
     }
 
     if (res.success && res.data.length > 0) {
-        container.innerHTML = res.data.map(reg => `
-            <div class="card">
+        container.innerHTML = res.data.map(reg => {
+            const eventRemoved = !eventNames[reg.event_id];
+            const eventLabel = eventRemoved ? "Dogadjaj uklonjen" : esc(eventNames[reg.event_id]);
+            return `
+            <div class="card ${eventRemoved ? "card-event-removed" : ""}">
                 <span class="badge">${reg.status === "confirmed" ? "Potvrdjeno" : "Otkazano"}</span>
-                <p><strong>Dogadjaj:</strong> ${esc(eventNames[reg.event_id] || "Nepoznat")}</p>
+                ${eventRemoved ? '<span class="badge badge-removed">Dogadjaj uklonjen</span>' : ""}
+                <p><strong>Dogadjaj:</strong> ${eventLabel}</p>
                 <p><strong>Karta:</strong> <span class="ticket-code">${esc(reg.ticket_code)}</span></p>
                 <p><strong>Datum prijave:</strong> ${formatDate(reg.created_at)}</p>
                 <div class="meta">
                     <button class="btn btn-secondary btn-small" onclick="downloadQR('${reg.id}')">QR Kod</button>
-                    ${reg.status === "confirmed" ? `<button class="btn btn-danger btn-small" onclick="cancelRegistration('${reg.id}')">Otkazi</button>` : ""}
+                    ${reg.status === "confirmed" && !eventRemoved ? `<button class="btn btn-danger btn-small" onclick="cancelRegistration('${reg.id}')">Otkazi</button>` : ""}
                 </div>
             </div>
-        `).join("");
+        `;
+        }).join("");
     } else {
         container.innerHTML = "<p>Nemate prijava.</p>";
     }
@@ -353,9 +358,21 @@ async function apiPost(path, body) {
             },
             body: JSON.stringify(body),
         });
-        return await res.json();
-    } catch {
-        return { success: false, message: "Greska u komunikaciji sa serverom" };
+        const text = await res.text();
+        let data;
+        try {
+            data = text ? JSON.parse(text) : {};
+        } catch {
+            if (!res.ok) {
+                if (res.status === 413) return { success: false, message: "Zahtev prevelik (smanjite sliku ili je izostavite)." };
+                return { success: false, message: "Server greska " + res.status + ". Proverite da li su servisi pokrenuti." };
+            }
+            return { success: false, message: "Greska u komunikaciji sa serverom" };
+        }
+        return data;
+    } catch (e) {
+        console.error("apiPost error:", e);
+        return { success: false, message: "Greska u komunikaciji sa serverom. Da li je API pokrenut na " + API + "?" };
     }
 }
 

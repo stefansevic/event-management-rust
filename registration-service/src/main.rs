@@ -46,6 +46,7 @@ async fn main() {
         .route("/registrations", post(handlers::register_for_event))
         .route("/registrations/my", get(handlers::my_registrations))
         .route("/registrations/event/:event_id", get(handlers::event_registrations))
+        .route("/internal/event/:event_id/cancel-registrations", post(handlers::cancel_registrations_for_event))
         .route("/registrations/:id", delete(handlers::cancel_registration))
         .route("/registrations/:id/ticket", get(handlers::get_ticket))
         .route("/registrations/:id/qr", get(handlers::get_ticket_qr))

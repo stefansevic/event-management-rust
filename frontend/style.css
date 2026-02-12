@@ -272,6 +272,20 @@ h3 {
     margin-bottom: 0.8rem;
 }
 
+.card .badge-removed {
+    background: #6c757d;
+    margin-left: 0.4rem;
+}
+
+.card-event-removed {
+    background: #f8f9fa;
+    opacity: 0.95;
+}
+
+.card-event-removed p {
+    color: #888;
+}
+
 .card .meta {
     display: flex;
     justify-content: space-between;
