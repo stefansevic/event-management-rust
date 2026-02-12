@@ -3,7 +3,7 @@ use serde_json::json;
 use uuid::Uuid;
 
 use axum::response::{IntoResponse, Response};
-use crate::models::{CountResult, EventServiceResponse, EventStats, OverviewStats, RegisterRequest, Registration};
+use crate::models::{CountResult, EventServiceResponse, RegisterRequest, Registration};
 use crate::AppState;
 use shared::auth::{extract_claims, require_role};
 use shared::models::ApiResponse;
@@ -367,95 +367,4 @@ pub async fn get_ticket_qr(
         }
         _ => (StatusCode::SERVICE_UNAVAILABLE, "QR servis nije dostupan").into_response(),
     }
-}
-
-// ---- Analitike ----
-
-/// GET /analytics/event/:event_id - statistika za jedan dogadjaj
-pub async fn analytics_event(
-    headers: HeaderMap,
-    State(state): State<AppState>,
-    Path(event_id): Path<Uuid>,
-) -> Result<(StatusCode, Json<ApiResponse<EventStats>>), (StatusCode, String)> {
-    let claims = extract_claims(&headers, &state.jwt_secret)?;
-    if claims.role != "Organizer" && claims.role != "Admin" {
-        return Err((StatusCode::FORBIDDEN, "Nemate dozvolu".to_string()));
-    }
-
-    let stats = sqlx::query_as::<_, EventStats>(
-        "SELECT
-            event_id,
-            COUNT(*) as total,
-            COUNT(*) FILTER (WHERE status = 'confirmed') as confirmed,
-            COUNT(*) FILTER (WHERE status = 'cancelled') as cancelled
-         FROM registrations
-         WHERE event_id = $1
-         GROUP BY event_id",
-    )
-    .bind(event_id)
-    .fetch_optional(&state.db)
-    .await;
-
-    match stats {
-        Ok(Some(s)) => Ok((StatusCode::OK, Json(ApiResponse::success("Statistika", s)))),
-        Ok(None) => Ok((
-            StatusCode::OK,
-            Json(ApiResponse::success(
-                "Nema prijava",
-                EventStats {
-                    event_id,
-                    total: Some(0),
-                    confirmed: Some(0),
-                    cancelled: Some(0),
-                },
-            )),
-        )),
-        Err(e) => Ok((
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse::error(&format!("Greska: {}", e))),
-        )),
-    }
-}
-
-/// GET /analytics/overview - ukupna statistika sistema (samo admin)
-pub async fn analytics_overview(
-    headers: HeaderMap,
-    State(state): State<AppState>,
-) -> Result<(StatusCode, Json<ApiResponse<OverviewStats>>), (StatusCode, String)> {
-    let claims = extract_claims(&headers, &state.jwt_secret)?;
-    require_role(&claims, "Admin")?;
-
-    let total = sqlx::query_as::<_, CountResult>(
-        "SELECT COUNT(*) as count FROM registrations",
-    )
-    .fetch_one(&state.db).await
-    .unwrap_or(CountResult { count: Some(0) }).count.unwrap_or(0);
-
-    let confirmed = sqlx::query_as::<_, CountResult>(
-        "SELECT COUNT(*) as count FROM registrations WHERE status = 'confirmed'",
-    )
-    .fetch_one(&state.db).await
-    .unwrap_or(CountResult { count: Some(0) }).count.unwrap_or(0);
-
-    let unique_events = sqlx::query_as::<_, CountResult>(
-        "SELECT COUNT(DISTINCT event_id) as count FROM registrations",
-    )
-    .fetch_one(&state.db).await
-    .unwrap_or(CountResult { count: Some(0) }).count.unwrap_or(0);
-
-    let unique_users = sqlx::query_as::<_, CountResult>(
-        "SELECT COUNT(DISTINCT user_id) as count FROM registrations",
-    )
-    .fetch_one(&state.db).await
-    .unwrap_or(CountResult { count: Some(0) }).count.unwrap_or(0);
-
-    let stats = OverviewStats {
-        total_registrations: total,
-        total_confirmed: confirmed,
-        total_cancelled: total - confirmed,
-        unique_events,
-        unique_users,
-    };
-
-    Ok((StatusCode::OK, Json(ApiResponse::success("Pregled statistike", stats))))
 }

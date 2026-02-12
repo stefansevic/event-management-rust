@@ -93,7 +93,6 @@ function updateNavbar() {
     toggle("nav-login", !isLoggedIn);
     toggle("nav-logout", isLoggedIn);
     toggle("nav-my-reg", isLoggedIn && !isAdmin);
-    toggle("nav-analytics", isOrgOrAdmin);
     toggle("nav-user", isLoggedIn);
     toggle("create-event-box", isOrgOrAdmin);
 
@@ -289,41 +288,6 @@ async function cancelRegistration(id) {
     }
 }
 
-// ANALYTICS
-
-async function loadAnalytics() {
-    const res = await apiGet("/analytics/overview");
-    const container = document.getElementById("analytics-overview");
-
-    if (res.success) {
-        const s = res.data;
-        container.innerHTML = `
-            <div class="stat-card">
-                <div class="number">${s.total_registrations}</div>
-                <div class="label">Ukupno prijava</div>
-            </div>
-            <div class="stat-card">
-                <div class="number">${s.total_confirmed}</div>
-                <div class="label">Potvrdjeno</div>
-            </div>
-            <div class="stat-card">
-                <div class="number">${s.total_cancelled}</div>
-                <div class="label">Otkazano</div>
-            </div>
-            <div class="stat-card">
-                <div class="number">${s.unique_events}</div>
-                <div class="label">Dogadjaja</div>
-            </div>
-            <div class="stat-card">
-                <div class="number">${s.unique_users}</div>
-                <div class="label">Korisnika</div>
-            </div>
-        `;
-    } else {
-        container.innerHTML = "<p>" + res.message + "</p>";
-    }
-}
-
 // NAVIGACIJA
 
 function showSection(name) {
@@ -332,7 +296,6 @@ function showSection(name) {
 
     if (name === "events") loadEvents();
     if (name === "my-registrations") loadMyRegistrations();
-    if (name === "analytics") loadAnalytics();
 }
 
 // HELPERS

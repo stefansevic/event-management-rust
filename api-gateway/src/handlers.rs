@@ -203,23 +203,3 @@ pub async fn reg_qr(
     let url = format!("{}/registrations/{}/qr", state.registration_url, id);
     forward_request(&state.client, "GET", &url, &headers, None).await
 }
-
-//  Analitike 
-
-/// GET analytics event
-pub async fn analytics_event(
-    State(state): State<AppState>,
-    Path(event_id): Path<String>,
-    req: Request,
-) -> Response {
-    let headers = req.headers().clone();
-    let url = format!("{}/analytics/event/{}", state.registration_url, event_id);
-    forward_request(&state.client, "GET", &url, &headers, None).await
-}
-
-/// GET analytics overview
-pub async fn analytics_overview(State(state): State<AppState>, req: Request) -> Response {
-    let headers = req.headers().clone();
-    let url = format!("{}/analytics/overview", state.registration_url);
-    forward_request(&state.client, "GET", &url, &headers, None).await
-}

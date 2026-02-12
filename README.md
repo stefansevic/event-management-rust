@@ -1,130 +1,165 @@
-# Event Management System  
-Mikroservisna aplikacija za upravljanje događajima
+# Event Management System
 
-## 1. Uvod
-Ovaj projekat predstavlja implementaciju mikroservisne aplikacije za upravljanje događajima
-(konferencije, radionice, koncerti, meetupi). Sistem omogućava korisnicima registraciju i
-autentifikaciju, pregled dostupnih događaja, prijavu na događaje, kao i upravljanje kapacitetima
-i rezervacijama.
+A microservices-based web application for managing events (conferences, workshops, concerts, meetups). Users can register, sign in, browse events, register for events, and manage tickets. Organizers and admins can create events, control capacity, and view analytics.
 
-Backend sistema je implementiran u programskom jeziku Rust, u skladu sa principima
-mikroservisne arhitekture. Fokus projekta je na pravilnoj podeli odgovornosti servisa,
-komunikaciji između njih i primeni savremenih arhitektonskih obrazaca, dok izgled
-korisničkog interfejsa nije u fokusu ocenjivanja.
+## Features
 
-## 2. Problem koji se rešava
-Organizacija događaja često zahteva rad sa velikim brojem korisnika, prijava i ograničenim
-kapacitetima. Monolitna rešenja otežavaju skaliranje sistema, uvođenje novih funkcionalnosti
-i održavanje koda.
+- **Authentication & authorization** — Register, login, JWT-based sessions, roles: User, Organizer, Admin
+- **User profiles** — CRUD profiles; Admin can manage all profiles
+- **Events** — Create, edit, delete events; optional image upload (stored as base64); category and search filters; past dates rejected
+- **Registrations** — Sign up for events, cancel registration; capacity checks; unique ticket codes
+- **Tickets & QR codes** — Download ticket info and QR code per registration (Python QR service)
+- **Admin** — Seeded admin account; delete events; when an event is deleted, all its registrations are auto-cancelled and shown as “Event removed” in My Registrations
 
-Glavni problemi koje sistem adresira su:
-- nepostojanje centralizovane evidencije događaja i prijava
-- neefikasno upravljanje kapacitetima događaja
-- nejasna autorizacija i kontrola pristupa
-- otežano proširenje sistema novim funkcionalnostima
+## Architecture
 
-## 3. Predlog rešenja
-Predloženo rešenje je web aplikacija zasnovana na mikroservisnoj arhitekturi, gde je svaki
-servis zadužen za jasno definisan domen problema i poseduje sopstvenu bazu podataka.
-Servisi međusobno komuniciraju putem REST API-ja.
+```
+                    ┌─────────────┐
+                    │   Frontend  │  (port 8080)
+                    │  (Nginx)    │
+                    └──────┬──────┘
+                           │
+                    ┌──────▼──────┐
+                    │ API Gateway│  (port 3000)
+                    └──────┬──────┘
+                           │
+         ┌─────────────────┼─────────────────┐
+         │                 │                 │
+    ┌────▼────┐      ┌─────▼─────┐      ┌─────▼─────┐
+    │  Auth   │      │   User    │      │   Event   │
+    │ (3001)  │      │  (3002)  │      │  (3003)   │
+    └────┬────┘      └──────────┘      └─────┬─────┘
+         │                                    │
+         │  ┌─────────────────────────────────┤
+         │  │                          ┌───────▼───────┐
+         │  │                          │ Registration  │
+         │  │                          │   (3004)      │
+         │  │                          └───────┬───────┘
+         │  │                                  │
+         │  │                          ┌───────▼───────┐
+         │  │                          │  QR Service  │
+         │  │                          │   (3005)      │
+         │  │                          └──────────────┘
+         │  │
+    ┌────▼──▼─────────────────────────────────────────┐
+    │              PostgreSQL (5432)                    │
+    │  auth_db | user_db | event_db | registration_db  │
+    └──────────────────────────────────────────────────┘
+```
 
-Sistem je projektovan tako da omogući:
-- modularnost i lakše održavanje
-- nezavisno skaliranje servisa
-- postepeno proširivanje funkcionalnosti
+- **Auth Service** — Registration, login, JWT issue/validation, roles. Seeds admin `saske@admin.com` / `saske1` if missing.
+- **User Service** — Profile CRUD; uses JWT for identity.
+- **Event Service** — Event CRUD; optional `image_url` (base64); on delete, calls Registration Service to cancel all registrations for that event.
+- **Registration Service** — Registrations, capacity checks, ticket codes; calls Event Service for event data and QR Service for QR images.
+- **QR Service** — Python/Flask; generates QR code images for ticket codes.
+- **API Gateway** — Single entry point; forwards requests to backend services; 5 MB body limit for large payloads (e.g. event images).
 
-## 4. Arhitektura sistema
-Aplikacija se sastoji od sledećih mikroservisa:
+Each service (except QR) has its own PostgreSQL database. Inter-service calls use internal Docker hostnames (e.g. `http://event-service:3003`).
 
-### 4.1 Auth Service
-Namena: Autentifikacija i autorizacija korisnika.
+## Tech Stack
 
-Funkcionalnosti:
-- registracija korisnika
-- prijava korisnika
-- izdavanje i validacija JWT tokena
-- upravljanje ulogama (korisnik, organizator, administrator)
+| Layer        | Technology                          |
+|-------------|--------------------------------------|
+| Backend     | Rust (Axum), Tokio, SQLx, Serde, JWT |
+| QR service  | Python 3, Flask, qrcode              |
+| Databases   | PostgreSQL 16                        |
+| Frontend    | HTML, CSS, JavaScript (vanilla)       |
+| Deployment  | Docker, Docker Compose               |
 
-Tehnologije:
-- Rust (Actix-web ili Axum)
-- PostgreSQL
-- JWT
+## Prerequisites
 
-### 4.2 User Service
-Namena: Upravljanje korisničkim profilima.
+- [Docker](https://docs.docker.com/get-docker/) and Docker Compose
+- (Optional) Rust toolchain and PostgreSQL if you run services locally
 
-Funkcionalnosti:
-- CRUD operacije nad korisnicima
-- čuvanje osnovnih podataka o korisnicima i organizatorima
+## Quick Start (Docker)
 
-Tehnologije:
-- Rust
-- PostgreSQL
+1. **Clone and enter the project**
+   ```bash
+   cd ntp-event-management-system
+   ```
 
-### 4.3 Event Service
-Namena: Upravljanje događajima.
+2. **Start all services**
+   ```bash
+   docker-compose up --build
+   ```
 
-Funkcionalnosti:
-- kreiranje, izmena i brisanje događaja
-- definisanje kapaciteta događaja
-- pretraga i filtriranje događaja
+3. **Open the app**
+   - Frontend: **http://localhost:8080**
+   - API (via gateway): **http://localhost:3000/api**
 
-Tehnologije:
-- Rust
-- PostgreSQL
+4. **Default admin** (created on first run if missing)
+   - Email: `saske@admin.com`
+   - Password: `saske1`
 
-### 4.4 Registration / Ticket Service
-Namena: Upravljanje prijavama i rezervacijama za događaje.
+To apply DB schema changes (e.g. new columns), remove volumes and start again:
 
-Funkcionalnosti:
-- prijava korisnika na događaj
-- otkazivanje prijave
-- kontrola popunjenosti kapaciteta
-- generisanje karata za događaje
+```bash
+docker-compose down -v
+docker-compose up --build
+```
 
-Tehnologije:
-- Rust
-- PostgreSQL
+## Environment Variables
 
-### 4.5 API Gateway (opciono)
-API Gateway predstavlja jedinstvenu ulaznu tačku ka backend sistemu i zadužen je za:
-- prosleđivanje zahteva ka odgovarajućim servisima
-- validaciju JWT tokena
-- agregaciju podataka iz više servisa (API composition)
+Copy `.env.example` to `.env` and adjust if needed. Main variables:
 
-## 5. Baze podataka
-Svaki mikroservis poseduje sopstvenu bazu podataka u skladu sa principima mikroservisne
-arhitekture:
+| Variable | Description |
+|----------|-------------|
+| `*_DATABASE_URL` | PostgreSQL connection strings per service |
+| `JWT_SECRET` | Secret used to sign/verify JWTs (same across services) |
+| `EVENT_SERVICE_URL`, `REGISTRATION_SERVICE_URL`, etc. | Used by gateway and inter-service calls |
 
-- Auth Service – PostgreSQL
-- User Service – PostgreSQL
-- Event Service – PostgreSQL
-- Registration Service – PostgreSQL
+Docker Compose sets these for the containers; override in `.env` or `docker-compose.yml` for your environment.
 
-## 6. Bezbednost
-- JWT autentifikacija
-- Role-based autorizacija
-- validacija zahteva na nivou servisa i API Gateway-a
-- zaštita privatnih endpoint-a
+## API Overview (via Gateway)
 
-## 7. Planirane dodatne funkcionalnosti
-- generisanje QR koda za ulaznice
-- kontejnerizacija servisa korišćenjem Docker alata
-- osnovne analitike (broj prijava po događaju)
-- proširenje sistema ka asinhronoj komunikaciji između servisa
+Base URL: `http://localhost:3000/api`
 
-## 8. Tehnologije
-- Rust (obavezno)
-- Actix-web ili Axum
-- PostgreSQL
-- Docker (planirano)
-- Frontend web aplikacija (nije u fokusu ocenjivanja)
+| Method | Path | Description |
+|--------|------|-------------|
+| POST   | `/auth/register` | Register (email, password) |
+| POST   | `/auth/login`    | Login; returns JWT |
+| GET    | `/auth/me`      | Current user (requires JWT) |
+| GET/PUT| `/users/profile`| My profile |
+| GET    | `/users/profiles` | List profiles (admin) |
+| GET/DELETE | `/users/profiles/:id` | Get/delete profile (admin) |
+| GET/POST | `/events`     | List events (query: category, search) / Create event (JWT, Organizer/Admin) |
+| GET/PUT/DELETE | `/events/:id` | Get / Update / Delete event |
+| POST   | `/registrations` | Register for event (body: `event_id`) |
+| GET    | `/registrations/my` | My registrations |
+| DELETE | `/registrations/:id` | Cancel registration |
+| GET    | `/registrations/:id/ticket` | Ticket details |
+| GET    | `/registrations/:id/qr` | QR code image |
 
-## 9. Ciljani broj poena
-Projektni zadatak se radi za maksimalan broj poena, uz mogućnost proširenja u skladu
-sa sugestijama asistenata.
+All protected routes expect header: `Authorization: Bearer <token>`.
 
-## 10. Zaključak
-Projekat demonstrira primenu mikroservisne arhitekture u realnom problemu upravljanja
-događajima. Sistem je modularan, skalabilan i projektovan tako da omogućava dalji razvoj
-i eventualno proširenje u diplomski rad.
+## Project Structure
+
+```
+ntp-event-management-system/
+├── api-gateway/          # Rust; routes and proxy to backend
+├── auth-service/        # Rust; register, login, JWT
+├── user-service/        # Rust; profiles
+├── event-service/       # Rust; events + image_url
+├── registration-service/# Rust; registrations, tickets
+├── qr-service/          # Python; QR image generation
+├── shared/               # Rust lib; JWT helpers, ApiResponse, AppError
+├── frontend/             # Static site (HTML/CSS/JS)
+├── scripts/
+│   └── init-db.sh       # PostgreSQL init (all DBs + tables)
+├── docker-compose.yml
+├── Dockerfile            # Multi-service Rust build
+├── Cargo.toml            # Workspace root
+└── .env.example
+```
+
+## Running Locally (without Docker)
+
+1. Start PostgreSQL and create databases: `auth_db`, `user_db`, `event_db`, `registration_db` (or run `scripts/init-db.sh` logic once).
+2. Copy `.env.example` to `.env` and set `*_DATABASE_URL` and `JWT_SECRET`.
+3. Run each service (e.g. `cargo run -p auth-service`, then user, event, registration, api-gateway).
+4. Run QR service: `cd qr-service && pip install -r requirements.txt && python app.py`.
+5. Serve frontend (e.g. `npx serve frontend` or open `frontend/index.html`); ensure API base URL in `frontend/app.js` points to your gateway (e.g. `http://localhost:3000/api`).
+
+## License
+
+This project is for educational purposes (NTP course).

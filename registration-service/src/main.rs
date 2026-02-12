@@ -50,8 +50,6 @@ async fn main() {
         .route("/registrations/:id", delete(handlers::cancel_registration))
         .route("/registrations/:id/ticket", get(handlers::get_ticket))
         .route("/registrations/:id/qr", get(handlers::get_ticket_qr))
-        .route("/analytics/event/:event_id", get(handlers::analytics_event))
-        .route("/analytics/overview", get(handlers::analytics_overview))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3004")
