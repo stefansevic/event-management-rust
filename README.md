@@ -9,6 +9,10 @@ A microservices-based web application for managing events (conferences, workshop
 - **Events** — Create, edit, delete events; optional image upload (stored as base64); category and search filters; past dates rejected
 - **Registrations** — Sign up for events, cancel registration; capacity checks; unique ticket codes
 - **Tickets & QR codes** — Download ticket info and QR code per registration (Python QR service)
+<<<<<<< HEAD
+=======
+- **Analytics** — Overview stats (total registrations, confirmed, cancelled, unique events/users) and per-event stats
+>>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
 - **Admin** — Seeded admin account; delete events; when an event is deleted, all its registrations are auto-cancelled and shown as “Event removed” in My Registrations
 
 ## Architecture
@@ -20,15 +24,26 @@ A microservices-based web application for managing events (conferences, workshop
                     └──────┬──────┘
                            │
                     ┌──────▼──────┐
+<<<<<<< HEAD
                     │ API Gateway│  (port 3000)
+=======
+                    │ API Gateway │  (port 3000)
+>>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
                     └──────┬──────┘
                            │
          ┌─────────────────┼─────────────────┐
          │                 │                 │
+<<<<<<< HEAD
     ┌────▼────┐      ┌─────▼─────┐      ┌─────▼─────┐
     │  Auth   │      │   User    │      │   Event   │
     │ (3001)  │      │  (3002)  │      │  (3003)   │
     └────┬────┘      └──────────┘      └─────┬─────┘
+=======
+    ┌────▼────┐      ┌─────▼────┐      ┌─────▼─────┐
+    │  Auth   │      │   User   │      │   Event   │
+    │ (3001)  │      │  (3002)  │      │  (3003)   │
+    └────┬────┘      └──────────┘      └──────┬────┘
+>>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
          │                                    │
          │  ┌─────────────────────────────────┤
          │  │                          ┌───────▼───────┐
@@ -36,6 +51,7 @@ A microservices-based web application for managing events (conferences, workshop
          │  │                          │   (3004)      │
          │  │                          └───────┬───────┘
          │  │                                  │
+<<<<<<< HEAD
          │  │                          ┌───────▼───────┐
          │  │                          │  QR Service  │
          │  │                          │   (3005)      │
@@ -45,6 +61,17 @@ A microservices-based web application for managing events (conferences, workshop
     │              PostgreSQL (5432)                    │
     │  auth_db | user_db | event_db | registration_db  │
     └──────────────────────────────────────────────────┘
+=======
+         │  │                          ┌───────▼──────┐
+         │  │                          │  QR Service  │
+         │  │                          │   (3005)     │
+         │  │                          └──────────────┘
+         │  │
+    ┌────▼──▼─────────────────────────────────────────┐
+    │              PostgreSQL (5432)                  │
+    │  auth_db | user_db | event_db | registration_db │
+    └─────────────────────────────────────────────────┘
+>>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
 ```
 
 - **Auth Service** — Registration, login, JWT issue/validation, roles. Seeds admin `saske@admin.com` / `saske1` if missing.
@@ -63,7 +90,11 @@ Each service (except QR) has its own PostgreSQL database. Inter-service calls us
 | Backend     | Rust (Axum), Tokio, SQLx, Serde, JWT |
 | QR service  | Python 3, Flask, qrcode              |
 | Databases   | PostgreSQL 16                        |
+<<<<<<< HEAD
 | Frontend    | HTML, CSS, JavaScript (vanilla)       |
+=======
+| Frontend    | HTML, CSS, JavaScript                |
+>>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
 | Deployment  | Docker, Docker Compose               |
 
 ## Prerequisites
@@ -129,6 +160,11 @@ Base URL: `http://localhost:3000/api`
 | DELETE | `/registrations/:id` | Cancel registration |
 | GET    | `/registrations/:id/ticket` | Ticket details |
 | GET    | `/registrations/:id/qr` | QR code image |
+<<<<<<< HEAD
+=======
+| GET    | `/analytics/overview` | Global stats |
+| GET    | `/analytics/event/:event_id` | Stats for one event |
+>>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
 
 All protected routes expect header: `Authorization: Bearer <token>`.
 
@@ -151,6 +187,7 @@ ntp-event-management-system/
 ├── Cargo.toml            # Workspace root
 └── .env.example
 ```
+<<<<<<< HEAD
 
 ## Running Locally (without Docker)
 
@@ -163,3 +200,5 @@ ntp-event-management-system/
 ## License
 
 This project is for educational purposes (NTP course).
+=======
+>>>>>>> d4ed6b579588248c513e4d0217cc20493fa032c7
