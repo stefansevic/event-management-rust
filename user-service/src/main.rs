@@ -4,7 +4,7 @@ mod db;
 mod handlers;
 mod models;
 
-use axum::{routing::{get, put, delete}, Router};
+use axum::{routing::get, Router};
 use sqlx::PgPool;
 
 #[derive(Clone)]
@@ -33,11 +33,9 @@ async fn main() {
 
     let app = Router::new()
         .route("/health", get(handlers::health_check))
-        .route("/profile", get(handlers::get_my_profile))
-        .route("/profile", put(handlers::upsert_profile))
+        .route("/profile", get(handlers::get_my_profile).put(handlers::upsert_profile))
         .route("/profiles", get(handlers::list_profiles))
-        .route("/profiles/{id}", get(handlers::get_profile_by_id))
-        .route("/profiles/{id}", delete(handlers::delete_profile))
+        .route("/profiles/:id", get(handlers::get_profile_by_id).delete(handlers::delete_profile))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3002")

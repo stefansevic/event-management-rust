@@ -92,7 +92,7 @@ function updateNavbar() {
 
     toggle("nav-login", !isLoggedIn);
     toggle("nav-logout", isLoggedIn);
-    toggle("nav-my-reg", isLoggedIn);
+    toggle("nav-my-reg", isLoggedIn && !isAdmin);
     toggle("nav-analytics", isOrgOrAdmin);
     toggle("nav-user", isLoggedIn);
     toggle("create-event-box", isOrgOrAdmin);
@@ -113,10 +113,24 @@ async function loadEvents() {
     if (category) url += "category=" + encodeURIComponent(category);
 
     const res = await apiGet(url);
+
+    // load my registrations
+    let myEventIds = [];
+    if (token) {
+        const regRes = await apiGet("/registrations/my");
+        if (regRes.success && regRes.data) {
+            myEventIds = regRes.data
+                .filter(r => r.status === "confirmed")
+                .map(r => r.event_id);
+        }
+    }
+
     const container = document.getElementById("events-list");
 
     if (res.success && res.data.length > 0) {
-        container.innerHTML = res.data.map(evt => `
+        container.innerHTML = res.data.map(evt => {
+            const alreadyRegistered = myEventIds.includes(evt.id);
+            return `
             <div class="card">
                 <span class="badge">${esc(evt.category)}</span>
                 <h3>${esc(evt.title)}</h3>
@@ -125,12 +139,27 @@ async function loadEvents() {
                 <p><strong>Datum:</strong> ${formatDate(evt.date_time)}</p>
                 <div class="meta">
                     <span class="capacity">Kapacitet: ${evt.capacity}</span>
-                    ${token ? `<button class="btn btn-primary btn-small" onclick="registerForEvent('${evt.id}')">Prijavi se</button>` : ""}
+                    ${token && !alreadyRegistered && currentUser && currentUser.role !== "Admin" ? `<button class="btn btn-primary btn-small" onclick="registerForEvent('${evt.id}')">Prijavi se</button>` : ""}
+                    ${token && alreadyRegistered && currentUser && currentUser.role !== "Admin" ? `<span class="badge" style="background:#28a745;color:#fff;">Prijavljeni ste</span>` : ""}
+                    ${currentUser && currentUser.role === "Admin" ? `<button class="btn btn-danger btn-small" onclick="deleteEvent('${evt.id}')">Obrisi</button>` : ""}
                 </div>
             </div>
-        `).join("");
+            `;
+        }).join("");
     } else {
         container.innerHTML = "<p>Nema dogadjaja.</p>";
+    }
+}
+
+async function deleteEvent(eventId) {
+    if (!confirm("Da li ste sigurni da zelite da obrisete ovaj dogadjaj?")) return;
+
+    const res = await apiDelete("/events/" + eventId);
+    if (res.success) {
+        toast("Dogadjaj obrisan", "success");
+        loadEvents();
+    } else {
+        toast(res.message || "Greska pri brisanju", "error");
     }
 }
 
@@ -170,6 +199,7 @@ async function registerForEvent(eventId) {
     const res = await apiPost("/registrations", { event_id: eventId });
     if (res.success) {
         toast("Uspesno prijavljeni! Kod karte: " + res.data.ticket_code, "success");
+        loadEvents();
     } else {
         toast(res.message, "error");
     }
@@ -179,12 +209,19 @@ async function loadMyRegistrations() {
     const res = await apiGet("/registrations/my");
     const container = document.getElementById("my-registrations-list");
 
+    // ucitaj nazive eventova
+    const eventsRes = await apiGet("/events");
+    const eventNames = {};
+    if (eventsRes.success && eventsRes.data) {
+        eventsRes.data.forEach(evt => { eventNames[evt.id] = evt.title; });
+    }
+
     if (res.success && res.data.length > 0) {
         container.innerHTML = res.data.map(reg => `
             <div class="card">
                 <span class="badge">${reg.status === "confirmed" ? "Potvrdjeno" : "Otkazano"}</span>
+                <p><strong>Dogadjaj:</strong> ${esc(eventNames[reg.event_id] || "Nepoznat")}</p>
                 <p><strong>Karta:</strong> <span class="ticket-code">${esc(reg.ticket_code)}</span></p>
-                <p><strong>Event ID:</strong> ${reg.event_id}</p>
                 <p><strong>Datum prijave:</strong> ${formatDate(reg.created_at)}</p>
                 <div class="meta">
                     <button class="btn btn-secondary btn-small" onclick="downloadQR('${reg.id}')">QR Kod</button>

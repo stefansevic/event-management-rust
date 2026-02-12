@@ -1,7 +1,7 @@
 # Multi-stage build za sve servise
 
 # Stage 1: Kompajliranje 
-FROM rust:1.77-bookworm AS builder
+FROM rust:latest AS builder
 
 WORKDIR /app
 COPY . .

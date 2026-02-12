@@ -45,11 +45,11 @@ async fn main() {
         .route("/health", get(handlers::health_check))
         .route("/registrations", post(handlers::register_for_event))
         .route("/registrations/my", get(handlers::my_registrations))
-        .route("/registrations/event/{event_id}", get(handlers::event_registrations))
-        .route("/registrations/{id}", delete(handlers::cancel_registration))
-        .route("/registrations/{id}/ticket", get(handlers::get_ticket))
-        .route("/registrations/{id}/qr", get(handlers::get_ticket_qr))
-        .route("/analytics/event/{event_id}", get(handlers::analytics_event))
+        .route("/registrations/event/:event_id", get(handlers::event_registrations))
+        .route("/registrations/:id", delete(handlers::cancel_registration))
+        .route("/registrations/:id/ticket", get(handlers::get_ticket))
+        .route("/registrations/:id/qr", get(handlers::get_ticket_qr))
+        .route("/analytics/event/:event_id", get(handlers::analytics_event))
         .route("/analytics/overview", get(handlers::analytics_overview))
         .with_state(state);
 

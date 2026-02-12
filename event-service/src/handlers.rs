@@ -28,6 +28,14 @@ pub async fn create_event(
 
     let organizer_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
+    // ne moze dogadjaj u proslosti
+    if req.date_time < chrono::Utc::now().naive_utc() {
+        return Ok((
+            StatusCode::BAD_REQUEST,
+            Json(ApiResponse::error("Datum dogadjaja ne moze biti u proslosti")),
+        ));
+    }
+
     let result = sqlx::query_as::<_, Event>(
         "INSERT INTO events (id, organizer_id, title, description, location, date_time, capacity, category)
          VALUES (gen_random_uuid(), $1, $2, $3, $4, $5, $6, $7)

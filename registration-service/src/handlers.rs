@@ -44,19 +44,35 @@ pub async fn register_for_event(
         );
     }
 
-    // pitamo servis za kapacitet
+    // pitamo event servis za kapacitet
     let event_url = format!("{}/events/{}", state.event_service_url, req.event_id);
-    let event_resp = reqwest::get(&event_url).await;
+    tracing::info!("Pozivam event servis: {}", event_url);
 
-    let event_data = match event_resp {
-        Ok(resp) => match resp.json::<EventServiceResponse>().await {
-            Ok(data) if data.success && data.data.is_some() => data.data.unwrap(),
-            _ => return (StatusCode::NOT_FOUND, Json(ApiResponse::error("Dogadjaj ne postoji"))),
-        },
-        Err(_) => return (
-            StatusCode::SERVICE_UNAVAILABLE,
-            Json(ApiResponse::error("Event servis nije dostupan")),
-        ),
+    let event_data = match reqwest::get(&event_url).await {
+        Ok(resp) => {
+            let status = resp.status();
+            let body = resp.text().await.unwrap_or_default();
+            tracing::info!("Event servis odgovorio: status={}, body={}", status, &body);
+
+            match serde_json::from_str::<EventServiceResponse>(&body) {
+                Ok(data) if data.success && data.data.is_some() => data.data.unwrap(),
+                Ok(data) => {
+                    tracing::warn!("Event servis vratio success=false: {:?}", data);
+                    return (StatusCode::NOT_FOUND, Json(ApiResponse::error("Dogadjaj ne postoji")));
+                }
+                Err(e) => {
+                    tracing::error!("Greska pri parsiranju odgovora event servisa: {}", e);
+                    return (StatusCode::NOT_FOUND, Json(ApiResponse::error("Dogadjaj ne postoji")));
+                }
+            }
+        }
+        Err(e) => {
+            tracing::error!("Ne mogu da kontaktiram event servis: {}", e);
+            return (
+                StatusCode::SERVICE_UNAVAILABLE,
+                Json(ApiResponse::error("Event servis nije dostupan")),
+            );
+        }
     };
 
     // count registrations

@@ -3,7 +3,7 @@
 mod handlers;
 mod proxy;
 
-use axum::{routing::{get, post, put, delete}, Router};
+use axum::{routing::{get, post, delete}, Router};
 use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Clone)]
@@ -46,26 +46,21 @@ async fn main() {
         .route("/api/auth/login", post(handlers::auth_login))
         .route("/api/auth/me", get(handlers::auth_me))
         // Users
-        .route("/api/users/profile", get(handlers::user_profile_get))
-        .route("/api/users/profile", put(handlers::user_profile_put))
+        .route("/api/users/profile", get(handlers::user_profile_get).put(handlers::user_profile_put))
         .route("/api/users/profiles", get(handlers::user_profiles_list))
-        .route("/api/users/profiles/{id}", get(handlers::user_profile_by_id))
-        .route("/api/users/profiles/{id}", delete(handlers::user_profile_delete))
+        .route("/api/users/profiles/:id", get(handlers::user_profile_by_id).delete(handlers::user_profile_delete))
         // Events
-        .route("/api/events", post(handlers::event_create))
-        .route("/api/events", get(handlers::event_list))
-        .route("/api/events/{id}", get(handlers::event_get))
-        .route("/api/events/{id}", put(handlers::event_update))
-        .route("/api/events/{id}", delete(handlers::event_delete))
+        .route("/api/events", get(handlers::event_list).post(handlers::event_create))
+        .route("/api/events/:id", get(handlers::event_get).put(handlers::event_update).delete(handlers::event_delete))
         // Registrations
         .route("/api/registrations", post(handlers::reg_create))
         .route("/api/registrations/my", get(handlers::reg_my))
-        .route("/api/registrations/event/{event_id}", get(handlers::reg_by_event))
-        .route("/api/registrations/{id}", delete(handlers::reg_cancel))
-        .route("/api/registrations/{id}/ticket", get(handlers::reg_ticket))
-        .route("/api/registrations/{id}/qr", get(handlers::reg_qr))
+        .route("/api/registrations/event/:event_id", get(handlers::reg_by_event))
+        .route("/api/registrations/:id", delete(handlers::reg_cancel))
+        .route("/api/registrations/:id/ticket", get(handlers::reg_ticket))
+        .route("/api/registrations/:id/qr", get(handlers::reg_qr))
         // Analitike
-        .route("/api/analytics/event/{event_id}", get(handlers::analytics_event))
+        .route("/api/analytics/event/:event_id", get(handlers::analytics_event))
         .route("/api/analytics/overview", get(handlers::analytics_overview))
         .layer(cors)
         .with_state(state);
