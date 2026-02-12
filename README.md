@@ -1,6 +1,6 @@
 # Event Management System
 
-A microservices-based web application for managing events (conferences, workshops, concerts, meetups). Users can register, sign in, browse events, register for events, and manage tickets. Organizers and admins can create events, control capacity, and view analytics.
+A microservices-based web application for managing events (conferences, workshops, concerts, meetups). Users can register, sign in, browse events, register for events, and manage tickets. Organizers and admins can create events and control capacity.
 
 ## Features
 
@@ -9,7 +9,6 @@ A microservices-based web application for managing events (conferences, workshop
 - **Events** — Create, edit, delete events; optional image upload (stored as base64); category and search filters; past dates rejected
 - **Registrations** — Sign up for events, cancel registration; capacity checks; unique ticket codes
 - **Tickets & QR codes** — Download ticket info and QR code per registration (Python QR service)
-- **Analytics** — Overview stats (total registrations, confirmed, cancelled, unique events/users) and per-event stats
 - **Admin** — Seeded admin account; delete events; when an event is deleted, all its registrations are auto-cancelled and shown as “Event removed” in My Registrations
 
 ## Architecture
@@ -130,8 +129,6 @@ Base URL: `http://localhost:3000/api`
 | DELETE | `/registrations/:id` | Cancel registration |
 | GET    | `/registrations/:id/ticket` | Ticket details |
 | GET    | `/registrations/:id/qr` | QR code image |
-| GET    | `/analytics/overview` | Global stats |
-| GET    | `/analytics/event/:event_id` | Stats for one event |
 
 All protected routes expect header: `Authorization: Bearer <token>`.
 
