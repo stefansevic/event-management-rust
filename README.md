@@ -1,12 +1,11 @@
 # Event Management System
 
-A microservices-based web application for managing events (conferences, workshops, concerts, meetups). Users can register, sign in, browse events, register for events, and manage tickets. Organizers and admins can create events and control capacity.
+A microservices-based web application for managing events (conferences, workshops, concerts, meetups). Users can register, sign in, browse events, register for events, and manage tickets. Admins create and delete events and control capacity.
 
 ## Features
 
-- **Authentication & authorization** — Register, login, JWT-based sessions, roles: User, Organizer, Admin
-- **User profiles** — CRUD profiles; Admin can manage all profiles
-- **Events** — Create, edit, delete events; optional image upload (stored as base64); category and search filters; past dates rejected
+- **Authentication & authorization** — Register, login, JWT-based sessions, roles: User, Admin
+- **Events** — Create, delete events; optional image upload (stored as base64); category and search filters; past dates rejected
 - **Registrations** — Sign up for events, cancel registration; capacity checks; unique ticket codes
 - **Tickets & QR codes** — Download ticket info and QR code per registration (Python QR service)
 - **Admin** — Seeded admin account; delete events; when an event is deleted, all its registrations are auto-cancelled and shown as “Event removed” in My Registrations
@@ -25,31 +24,24 @@ A microservices-based web application for managing events (conferences, workshop
                            │
          ┌─────────────────┼─────────────────┐
          │                 │                 │
-    ┌────▼────┐      ┌─────▼────┐      ┌─────▼─────┐
-    │  Auth   │      │   User   │      │   Event   │
-    │ (3001)  │      │  (3002)  │      │  (3003)   │
-    └────┬────┘      └──────────┘      └──────┬────┘
-         │                                    │
-         │  ┌─────────────────────────────────┤
-         │  │                          ┌───────▼───────┐
-         │  │                          │ Registration  │
-         │  │                          │   (3004)      │
-         │  │                          └───────┬───────┘
-         │  │                                  │
-         │  │                          ┌───────▼──────┐
-         │  │                          │  QR Service  │
-         │  │                          │   (3005)     │
-         │  │                          └──────────────┘
-         │  │
-    ┌────▼──▼─────────────────────────────────────────┐
+    ┌────▼────┐      ┌─────▼────┐      ┌─────▼───────┐
+    │  Auth   │      │   Event  │      │ Registration│
+    │ (3001)  │      │  (3003)  │      │   (3004)    │
+    └────┬────┘      └────┬─────┘      └──────┬──────┘
+         │                │                    │
+         │                │             ┌───────▼──────┐
+         │                │             │  QR Service  │
+         │                │             │   (3005)     │
+         │                │             └──────────────┘
+         │                │
+    ┌────▼────────────────▼───────────────────────────┐
     │              PostgreSQL (5432)                  │
-    │  auth_db | user_db | event_db | registration_db │
+    │  auth_db | event_db | registration_db │
     └─────────────────────────────────────────────────┘
 ```
 
 - **Auth Service** — Registration, login, JWT issue/validation, roles. Seeds admin `saske@admin.com` / `saske1` if missing.
-- **User Service** — Profile CRUD; uses JWT for identity.
-- **Event Service** — Event CRUD; optional `image_url` (base64); on delete, calls Registration Service to cancel all registrations for that event.
+- **Event Service** — Create/delete events; optional `image_url` (base64); on delete, calls Registration Service to cancel all registrations for that event.
 - **Registration Service** — Registrations, capacity checks, ticket codes; calls Event Service for event data and QR Service for QR images.
 - **QR Service** — Python/Flask; generates QR code images for ticket codes.
 - **API Gateway** — Single entry point; forwards requests to backend services; 5 MB body limit for large payloads (e.g. event images).
@@ -119,15 +111,11 @@ Base URL: `http://localhost:3000/api`
 | POST   | `/auth/register` | Register (email, password) |
 | POST   | `/auth/login`    | Login; returns JWT |
 | GET    | `/auth/me`       | Current user (requires JWT) |
-| GET/PUT| `/users/profile` | My profile |
-| GET    | `/users/profiles` | List profiles (admin) |
-| GET/DELETE | `/users/profiles/:id` | Get/delete profile (admin) |
-| GET/POST | `/events`      | List events (query: category, search) / Create event (JWT, Organizer/Admin) |
-| GET/PUT/DELETE | `/events/:id` | Get / Update / Delete event |
+| GET/POST | `/events`      | List events (query: category, search) / Create event (JWT, Admin) |
+| GET/DELETE | `/events/:id` | Get event / Delete event |
 | POST   | `/registrations` | Register for event (body: `event_id`) |
 | GET    | `/registrations/my` | My registrations |
 | DELETE | `/registrations/:id` | Cancel registration |
-| GET    | `/registrations/:id/ticket` | Ticket details |
 | GET    | `/registrations/:id/qr` | QR code image |
 
 All protected routes expect header: `Authorization: Bearer <token>`.
@@ -138,7 +126,6 @@ All protected routes expect header: `Authorization: Bearer <token>`.
 ntp-event-management-system/
 ├── api-gateway/           # Rust; routes and proxy to backend
 ├── auth-service/          # Rust; register, login, JWT
-├── user-service/          # Rust; profiles
 ├── event-service/         # Rust; events + image_url
 ├── registration-service/  # Rust; registrations, tickets
 ├── qr-service/            # Python; QR image generation

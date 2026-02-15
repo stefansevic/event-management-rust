@@ -4,7 +4,7 @@ use axum::{extract::{Path, Query, State}, http::{HeaderMap, StatusCode}, Json};
 use serde_json::json;
 use uuid::Uuid;
 
-use crate::models::{CreateEventRequest, Event, EventQuery, UpdateEventRequest};
+use crate::models::{CreateEventRequest, Event, EventQuery};
 use crate::AppState;
 use shared::auth::{extract_claims, require_role};
 use shared::models::ApiResponse;
@@ -24,7 +24,7 @@ pub async fn create_event(
     Json(req): Json<CreateEventRequest>,
 ) -> Result<(StatusCode, Json<ApiResponse<Event>>), (StatusCode, String)> {
     let claims = extract_claims(&headers, &state.jwt_secret)?;
-    require_role(&claims, "Organizer")?;
+    require_role(&claims, "Admin")?;
 
     let organizer_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
 
@@ -135,73 +135,6 @@ pub async fn get_event(
         Ok(None) => (
             StatusCode::NOT_FOUND,
             Json(ApiResponse::error("Dogadjaj ne postoji")),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse::error(&format!("Greska: {}", e))),
-        ),
-    }
-}
-
-/// update event
-pub async fn update_event(
-    headers: HeaderMap,
-    State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-    Json(req): Json<UpdateEventRequest>,
-) -> (StatusCode, Json<ApiResponse<Event>>) {
-    let claims = match extract_claims(&headers, &state.jwt_secret) {
-        Ok(c) => c,
-        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
-    };
-
-    // dal postoji
-    let existing = sqlx::query_as::<_, Event>("SELECT * FROM events WHERE id = $1")
-        .bind(id)
-        .fetch_optional(&state.db)
-        .await;
-
-    let event = match existing {
-        Ok(Some(e)) => e,
-        Ok(None) => return (StatusCode::NOT_FOUND, Json(ApiResponse::error("Dogadjaj ne postoji"))),
-        Err(e) => return (StatusCode::INTERNAL_SERVER_ERROR, Json(ApiResponse::error(&format!("Greska: {}", e)))),
-    };
-
-    // DAC access
-    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
-    if event.organizer_id != user_id && claims.role != "Admin" {
-        return (StatusCode::FORBIDDEN, Json(ApiResponse::error("Nemate dozvolu da menjate ovaj dogadjaj")));
-    }
-
-    // update poslata polja
-    let result = sqlx::query_as::<_, Event>(
-        "UPDATE events SET
-            title = COALESCE($2, title),
-            description = COALESCE($3, description),
-            location = COALESCE($4, location),
-            date_time = COALESCE($5, date_time),
-            capacity = COALESCE($6, capacity),
-            category = COALESCE($7, category),
-            image_url = COALESCE($8, image_url),
-            updated_at = NOW()
-         WHERE id = $1
-         RETURNING *",
-    )
-    .bind(id)
-    .bind(&req.title)
-    .bind(&req.description)
-    .bind(&req.location)
-    .bind(req.date_time)
-    .bind(req.capacity)
-    .bind(&req.category)
-    .bind(&req.image_url)
-    .fetch_one(&state.db)
-    .await;
-
-    match result {
-        Ok(updated) => (
-            StatusCode::OK,
-            Json(ApiResponse::success("Dogadjaj azuriran", updated)),
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,

@@ -10,7 +10,6 @@ use tower_http::cors::{Any, CorsLayer};
 pub struct AppState {
     pub client: reqwest::Client,
     pub auth_url: String,
-    pub user_url: String,
     pub event_url: String,
     pub registration_url: String,
 }
@@ -24,8 +23,6 @@ async fn main() {
         client: reqwest::Client::new(),
         auth_url: std::env::var("AUTH_SERVICE_URL")
             .unwrap_or_else(|_| "http://localhost:3001".to_string()),
-        user_url: std::env::var("USER_SERVICE_URL")
-            .unwrap_or_else(|_| "http://localhost:3002".to_string()),
         event_url: std::env::var("EVENT_SERVICE_URL")
             .unwrap_or_else(|_| "http://localhost:3003".to_string()),
         registration_url: std::env::var("REGISTRATION_SERVICE_URL")
@@ -45,19 +42,13 @@ async fn main() {
         .route("/api/auth/register", post(handlers::auth_register))
         .route("/api/auth/login", post(handlers::auth_login))
         .route("/api/auth/me", get(handlers::auth_me))
-        // Users
-        .route("/api/users/profile", get(handlers::user_profile_get).put(handlers::user_profile_put))
-        .route("/api/users/profiles", get(handlers::user_profiles_list))
-        .route("/api/users/profiles/:id", get(handlers::user_profile_by_id).delete(handlers::user_profile_delete))
         // Events
         .route("/api/events", get(handlers::event_list).post(handlers::event_create))
-        .route("/api/events/:id", get(handlers::event_get).put(handlers::event_update).delete(handlers::event_delete))
+        .route("/api/events/:id", get(handlers::event_get).delete(handlers::event_delete))
         // Registrations
         .route("/api/registrations", post(handlers::reg_create))
         .route("/api/registrations/my", get(handlers::reg_my))
-        .route("/api/registrations/event/:event_id", get(handlers::reg_by_event))
         .route("/api/registrations/:id", delete(handlers::reg_cancel))
-        .route("/api/registrations/:id/ticket", get(handlers::reg_ticket))
         .route("/api/registrations/:id/qr", get(handlers::reg_qr))
         .layer(cors)
         .with_state(state);

@@ -30,11 +30,3 @@ impl<T: Serialize> ApiResponse<T> {
         }
     }
 }
-
-/// Tri uloge u sistemu - obican korisnik, organizator i admin
-#[derive(Debug, Clone, Serialize, Deserialize, PartialEq)]
-pub enum UserRole {
-    User,
-    Organizer,
-    Admin,
-}

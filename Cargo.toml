@@ -5,7 +5,6 @@ resolver = "2"
 members = [
     "shared",
     "auth-service",
-    "user-service",
     "event-service",
     "registration-service",
     "api-gateway",

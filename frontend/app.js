@@ -87,14 +87,13 @@ function logout() {
 
 function updateNavbar() {
     const isLoggedIn = !!currentUser;
-    const isOrgOrAdmin = isLoggedIn && (currentUser.role === "Organizer" || currentUser.role === "Admin");
     const isAdmin = isLoggedIn && currentUser.role === "Admin";
 
     toggle("nav-login", !isLoggedIn);
     toggle("nav-logout", isLoggedIn);
     toggle("nav-my-reg", isLoggedIn && !isAdmin);
     toggle("nav-user", isLoggedIn);
-    toggle("create-event-box", isOrgOrAdmin);
+    toggle("create-event-box", isAdmin);
 
     if (isLoggedIn) {
         document.getElementById("nav-user").textContent = currentUser.email + " (" + currentUser.role + ")";

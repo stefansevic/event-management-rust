@@ -6,7 +6,6 @@ echo "Kreiram baze podataka..."
 
 psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" <<-EOSQL
     CREATE DATABASE auth_db;
-    CREATE DATABASE user_db;
     CREATE DATABASE event_db;
     CREATE DATABASE registration_db;
 EOSQL
@@ -21,19 +20,6 @@ psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname auth_db <<-EOSQL
         password_hash TEXT NOT NULL,
         role VARCHAR(50) NOT NULL DEFAULT 'User',
         created_at TIMESTAMP NOT NULL DEFAULT NOW()
-    );
-EOSQL
-
-echo "Pokrecem migracije za user_db..."
-psql -v ON_ERROR_STOP=1 --username "$POSTGRES_USER" --dbname user_db <<-EOSQL
-    CREATE TABLE IF NOT EXISTS user_profiles (
-        id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-        user_id UUID UNIQUE NOT NULL,
-        full_name VARCHAR(255) NOT NULL,
-        phone VARCHAR(50),
-        bio TEXT,
-        created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-        updated_at TIMESTAMP NOT NULL DEFAULT NOW()
     );
 EOSQL
 

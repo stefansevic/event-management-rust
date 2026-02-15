@@ -15,7 +15,7 @@ services:
       - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     healthcheck:
       # Čekaj da Postgres prihvati konekcije I da init skripta kreira sve baze
-      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -tAc \"SELECT count(*) FROM pg_database WHERE datname IN ('auth_db','user_db','event_db','registration_db')\" | grep -qx 4"]
+      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -tAc \"SELECT count(*) FROM pg_database WHERE datname IN ('auth_db','event_db','registration_db')\" | grep -qx 3"]
       interval: 3s
       timeout: 5s
       retries: 15
@@ -32,21 +32,6 @@ services:
       JWT_SECRET: super-tajni-kljuc-za-development
     ports:
       - "3001:3001"
-    depends_on:
-      postgres:
-        condition: service_healthy
-
-  #  User Service (port 3002) 
-  user-service:
-    build:
-      context: .
-      args:
-        SERVICE_NAME: user-service
-    environment:
-      USER_DATABASE_URL: postgres://postgres:password@postgres:5432/user_db
-      JWT_SECRET: super-tajni-kljuc-za-development
-    ports:
-      - "3002:3002"
     depends_on:
       postgres:
         condition: service_healthy
@@ -103,14 +88,12 @@ services:
         SERVICE_NAME: api-gateway
     environment:
       AUTH_SERVICE_URL: http://auth-service:3001
-      USER_SERVICE_URL: http://user-service:3002
       EVENT_SERVICE_URL: http://event-service:3003
       REGISTRATION_SERVICE_URL: http://registration-service:3004
     ports:
       - "3000:3000"
     depends_on:
       - auth-service
-      - user-service
       - event-service
       - registration-service
 

@@ -42,7 +42,7 @@ async fn main() {
     let app = Router::new()
         .route("/health", get(handlers::health_check))
         .route("/events", get(handlers::list_events).post(handlers::create_event))
-        .route("/events/:id", get(handlers::get_event).put(handlers::update_event).delete(handlers::delete_event))
+        .route("/events/:id", get(handlers::get_event).delete(handlers::delete_event))
         .with_state(state);
 
     let listener = tokio::net::TcpListener::bind("0.0.0.0:3003")

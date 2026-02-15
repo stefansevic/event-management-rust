@@ -5,7 +5,7 @@ use uuid::Uuid;
 use axum::response::{IntoResponse, Response};
 use crate::models::{CountResult, EventServiceResponse, RegisterRequest, Registration};
 use crate::AppState;
-use shared::auth::{extract_claims, require_role};
+use shared::auth::extract_claims;
 use shared::models::ApiResponse;
 
 /// GET health
@@ -225,86 +225,6 @@ pub async fn my_registrations(
         Ok(regs) => (
             StatusCode::OK,
             Json(ApiResponse::success("Moje prijave", regs)),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse::error(&format!("Greska: {}", e))),
-        ),
-    }
-}
-
-/// get all registrations for event
-pub async fn event_registrations(
-    headers: HeaderMap,
-    State(state): State<AppState>,
-    Path(event_id): Path<Uuid>,
-) -> (StatusCode, Json<ApiResponse<Vec<Registration>>>) {
-    let claims = match extract_claims(&headers, &state.jwt_secret) {
-        Ok(c) => c,
-        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
-    };
-    // organizer i admin mogu da vide listu registracija
-    if claims.role != "Organizer" && claims.role != "Admin" {
-        return (
-            StatusCode::FORBIDDEN,
-            Json(ApiResponse::error("Nemate dozvolu")),
-        );
-    }
-
-    let result = sqlx::query_as::<_, Registration>(
-        "SELECT * FROM registrations WHERE event_id = $1 ORDER BY created_at",
-    )
-    .bind(event_id)
-    .fetch_all(&state.db)
-    .await;
-
-    match result {
-        Ok(regs) => (
-            StatusCode::OK,
-            Json(ApiResponse::success("Prijave za dogadjaj", regs)),
-        ),
-        Err(e) => (
-            StatusCode::INTERNAL_SERVER_ERROR,
-            Json(ApiResponse::error(&format!("Greska: {}", e))),
-        ),
-    }
-}
-
-/// GET registration ticket
-pub async fn get_ticket(
-    headers: HeaderMap,
-    State(state): State<AppState>,
-    Path(id): Path<Uuid>,
-) -> (StatusCode, Json<ApiResponse<Registration>>) {
-    let claims = match extract_claims(&headers, &state.jwt_secret) {
-        Ok(c) => c,
-        Err((status, msg)) => return (status, Json(ApiResponse::error(&msg))),
-    };
-    let user_id = Uuid::parse_str(&claims.sub).unwrap_or_default();
-
-    let result = sqlx::query_as::<_, Registration>(
-        "SELECT * FROM registrations WHERE id = $1",
-    )
-    .bind(id)
-    .fetch_optional(&state.db)
-    .await;
-
-    match result {
-        Ok(Some(reg)) => {
-            if reg.user_id != user_id && claims.role != "Admin" {
-                return (
-                    StatusCode::FORBIDDEN,
-                    Json(ApiResponse::error("Nemate pristup ovoj karti")),
-                );
-            }
-            (
-                StatusCode::OK,
-                Json(ApiResponse::success("Karta", reg)),
-            )
-        }
-        Ok(None) => (
-            StatusCode::NOT_FOUND,
-            Json(ApiResponse::error("Karta ne postoji")),
         ),
         Err(e) => (
             StatusCode::INTERNAL_SERVER_ERROR,
