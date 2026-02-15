@@ -14,10 +14,12 @@ services:
       - postgres_data:/var/lib/postgresql/data
       - ./scripts/init-db.sh:/docker-entrypoint-initdb.d/init-db.sh
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U postgres"]
-      interval: 5s
+      # Čekaj da Postgres prihvati konekcije I da init skripta kreira sve baze
+      test: ["CMD-SHELL", "pg_isready -U postgres && psql -U postgres -tAc \"SELECT count(*) FROM pg_database WHERE datname IN ('auth_db','user_db','event_db','registration_db')\" | grep -qx 4"]
+      interval: 3s
       timeout: 5s
-      retries: 5
+      retries: 15
+      start_period: 30s
 
   #  Auth Service (port 3001) 
   auth-service:

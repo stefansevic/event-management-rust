@@ -6,6 +6,9 @@ FROM rust:latest AS builder
 WORKDIR /app
 COPY . .
 
+# Ograniči paralelnost Cargo builda da ne iscrpi RAM (npr. na MacBook Air)
+ENV CARGO_BUILD_JOBS=1
+
 ARG SERVICE_NAME
 RUN cargo build --release --bin ${SERVICE_NAME}
 
