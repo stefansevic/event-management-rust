@@ -5,7 +5,7 @@ A microservices-based web application for managing events (conferences, workshop
 ## Features
 
 - **Authentication & authorization** — Register, login, JWT-based sessions, roles: User, Admin
-- **Events** — Create, delete events; optional image upload (stored as base64); category and search filters; past dates rejected
+- **Events** — Create, update, delete events; optional image upload (stored as base64); category and search filters; past dates rejected
 - **Registrations** — Sign up for events, cancel registration; capacity checks; unique ticket codes
 - **Tickets & QR codes** — Download ticket info and QR code per registration (Python QR service)
 - **Admin** — Seeded admin account; delete events; when an event is deleted, all its registrations are auto-cancelled and shown as “Event removed” in My Registrations
@@ -28,15 +28,15 @@ A microservices-based web application for managing events (conferences, workshop
     │  Auth   │      │   Event  │      │ Registration│
     │ (3001)  │      │  (3003)  │      │   (3004)    │
     └────┬────┘      └────┬─────┘      └──────┬──────┘
-         │                │                    │
-         │                │             ┌───────▼──────┐
-         │                │             │  QR Service  │
-         │                │             │   (3005)     │
-         │                │             └──────────────┘
+         │                │                   │
+         │                │           ┌───────▼──────┐
+         │                │           │  QR Service  │
+         │                │           │   (3005)     │
+         │                │           └──────────────┘
          │                │
     ┌────▼────────────────▼───────────────────────────┐
     │              PostgreSQL (5432)                  │
-    │  auth_db | event_db | registration_db │
+    │  auth_db | event_db | registration_db           │
     └─────────────────────────────────────────────────┘
 ```
 
@@ -112,7 +112,7 @@ Base URL: `http://localhost:3000/api`
 | POST   | `/auth/login`    | Login; returns JWT |
 | GET    | `/auth/me`       | Current user (requires JWT) |
 | GET/POST | `/events`      | List events (query: category, search) / Create event (JWT, Admin) |
-| GET/DELETE | `/events/:id` | Get event / Delete event |
+| GET/PUT/DELETE | `/events/:id` | Get / Update / Delete event |
 | POST   | `/registrations` | Register for event (body: `event_id`) |
 | GET    | `/registrations/my` | My registrations |
 | DELETE | `/registrations/:id` | Cancel registration |

@@ -140,13 +140,72 @@ async function loadEvents() {
                     <span class="capacity">Kapacitet: ${evt.capacity}</span>
                     ${token && !alreadyRegistered && currentUser && currentUser.role !== "Admin" ? `<button class="btn btn-primary btn-small" onclick="registerForEvent('${evt.id}')">Prijavi se</button>` : ""}
                     ${token && alreadyRegistered && currentUser && currentUser.role !== "Admin" ? `<span class="badge" style="background:#28a745;color:#fff;">Prijavljeni ste</span>` : ""}
-                    ${currentUser && currentUser.role === "Admin" ? `<button class="btn btn-danger btn-small" onclick="deleteEvent('${evt.id}')">Obrisi</button>` : ""}
+                    ${currentUser && currentUser.role === "Admin" ? `<button class="btn btn-small" onclick="openEditEvent('${evt.id}')" style="margin-right:4px;">Izmeni</button><button class="btn btn-danger btn-small" onclick="deleteEvent('${evt.id}')">Obrisi</button>` : ""}
                 </div>
             </div>
             `;
         }).join("");
     } else {
         container.innerHTML = "<p>Nema dogadjaja.</p>";
+    }
+}
+
+async function openEditEvent(eventId) {
+    const res = await apiGet("/events/" + eventId);
+    if (!res.success || !res.data) {
+        toast(res.message || "Greska", "error");
+        return;
+    }
+    const evt = res.data;
+    document.getElementById("edit-evt-id").value = evt.id;
+    document.getElementById("edit-evt-title").value = evt.title;
+    document.getElementById("edit-evt-description").value = evt.description;
+    document.getElementById("edit-evt-location").value = evt.location;
+    document.getElementById("edit-evt-datetime").value = (evt.date_time || "").slice(0, 16);
+    document.getElementById("edit-evt-capacity").value = evt.capacity;
+    document.getElementById("edit-evt-category").value = evt.category || "Ostalo";
+    document.getElementById("edit-evt-image").value = "";
+    document.getElementById("edit-event-modal").classList.remove("hidden");
+    document.body.style.overflow = "hidden";
+    document.addEventListener("keydown", onEditModalKeydown);
+}
+
+function onEditModalKeydown(e) {
+    if (e.key === "Escape") closeEditEvent();
+}
+
+function closeEditEvent() {
+    document.getElementById("edit-event-modal").classList.add("hidden");
+    document.body.style.overflow = "";
+    document.removeEventListener("keydown", onEditModalKeydown);
+}
+
+async function handleUpdateEvent(e) {
+    e.preventDefault();
+    const id = document.getElementById("edit-evt-id").value;
+    const data = {
+        title: document.getElementById("edit-evt-title").value,
+        description: document.getElementById("edit-evt-description").value,
+        location: document.getElementById("edit-evt-location").value,
+        date_time: document.getElementById("edit-evt-datetime").value + ":00",
+        capacity: parseInt(document.getElementById("edit-evt-capacity").value),
+        category: document.getElementById("edit-evt-category").value,
+    };
+    const imageInput = document.getElementById("edit-evt-image");
+    if (imageInput && imageInput.files.length > 0) {
+        if (imageInput.files[0].size > 3 * 1024 * 1024) {
+            toast("Slika prevelika (max 3MB)", "error");
+            return;
+        }
+        data.image_url = await readFileAsBase64(imageInput.files[0]);
+    }
+    const res = await apiPut("/events/" + id, data);
+    if (res.success) {
+        toast("Dogadjaj izmenjen!", "success");
+        closeEditEvent();
+        loadEvents();
+    } else {
+        toast(res.message || "Greska", "error");
     }
 }
 
@@ -335,6 +394,27 @@ async function apiPost(path, body) {
     } catch (e) {
         console.error("apiPost error:", e);
         return { success: false, message: "Greska u komunikaciji sa serverom. Da li je API pokrenut na " + API + "?" };
+    }
+}
+
+async function apiPut(path, body) {
+    try {
+        const res = await fetch(API + path, {
+            method: "PUT",
+            headers: {
+                "Content-Type": "application/json",
+                ...(token ? { "Authorization": "Bearer " + token } : {}),
+            },
+            body: JSON.stringify(body),
+        });
+        const text = await res.text();
+        try {
+            return text ? JSON.parse(text) : {};
+        } catch {
+            return { success: false, message: "Greska u odgovoru" };
+        }
+    } catch {
+        return { success: false, message: "Greska u komunikaciji sa serverom" };
     }
 }
 

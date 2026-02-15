@@ -3,7 +3,7 @@
 mod handlers;
 mod proxy;
 
-use axum::{routing::{get, post, delete}, Router};
+use axum::{routing::{get, post, put, delete}, Router};
 use tower_http::cors::{Any, CorsLayer};
 
 #[derive(Clone)]
@@ -44,7 +44,7 @@ async fn main() {
         .route("/api/auth/me", get(handlers::auth_me))
         // Events
         .route("/api/events", get(handlers::event_list).post(handlers::event_create))
-        .route("/api/events/:id", get(handlers::event_get).delete(handlers::event_delete))
+        .route("/api/events/:id", get(handlers::event_get).put(handlers::event_update).delete(handlers::event_delete))
         // Registrations
         .route("/api/registrations", post(handlers::reg_create))
         .route("/api/registrations/my", get(handlers::reg_my))

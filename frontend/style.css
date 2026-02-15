@@ -343,6 +343,132 @@ h3 {
 .toast.success { background: #28a745; }
 .toast.error { background: #dc3545; }
 
+/* Modal – popup prozor za izmenu */
+.modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 1.5rem;
+    animation: modalFadeIn 0.2s ease-out;
+}
+.modal-overlay.hidden {
+    display: none !important;
+}
+@keyframes modalFadeIn {
+    from { opacity: 0; }
+    to { opacity: 1; }
+}
+.modal-backdrop {
+    position: absolute;
+    inset: 0;
+    background: rgba(26, 26, 46, 0.6);
+    backdrop-filter: blur(2px);
+    cursor: pointer;
+}
+.modal-window {
+    position: relative;
+    background: #fff;
+    border-radius: 12px;
+    box-shadow: 0 24px 48px rgba(0, 0, 0, 0.25);
+    max-width: 540px;
+    width: 100%;
+    max-height: 90vh;
+    display: flex;
+    flex-direction: column;
+    animation: modalSlideIn 0.25s ease-out;
+}
+@keyframes modalSlideIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(-10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+.modal-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem 1.25rem;
+    background: #1a1a2e;
+    color: #fff;
+    border-radius: 12px 12px 0 0;
+}
+.modal-title {
+    font-size: 1.15rem;
+    font-weight: 600;
+    margin: 0;
+    color: #fff;
+}
+.modal-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0;
+    border: none;
+    background: rgba(255,255,255,0.1);
+    color: #fff;
+    font-size: 1.5rem;
+    line-height: 1;
+    cursor: pointer;
+    border-radius: 8px;
+    transition: background 0.2s;
+}
+.modal-close:hover {
+    background: rgba(255,255,255,0.2);
+}
+.modal-body {
+    padding: 1.25rem 1.25rem 0;
+    overflow-y: auto;
+}
+.modal-form .form-group {
+    margin-bottom: 1rem;
+}
+.modal-form .form-group label {
+    display: block;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #444;
+    margin-bottom: 0.35rem;
+}
+.modal-form input,
+.modal-form textarea,
+.modal-form select {
+    width: 100%;
+    padding: 0.6rem 0.75rem;
+    border: 1px solid #ddd;
+    border-radius: 6px;
+    font-size: 0.95rem;
+}
+.modal-form .form-row {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1rem;
+}
+.modal-footer {
+    display: flex;
+    justify-content: flex-end;
+    gap: 0.75rem;
+    padding: 1rem 0 1.25rem;
+    margin-top: 0.5rem;
+    border-top: 1px solid #eee;
+}
+.btn-ghost {
+    background: transparent;
+    color: #666;
+    border: 1px solid #ddd;
+}
+.btn-ghost:hover {
+    background: #f5f5f5;
+}
+
 /* Pomoc */
 .hidden { display: none !important; }
 .message { margin-top: 1rem; text-align: center; font-size: 0.9rem; }

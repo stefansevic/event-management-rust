@@ -33,6 +33,18 @@ pub struct CreateEventRequest {
     pub image_url: Option<String>,
 }
 
+/// update req - sva polja opciona
+#[derive(Debug, Deserialize)]
+pub struct UpdateEventRequest {
+    pub title: Option<String>,
+    pub description: Option<String>,
+    pub location: Option<String>,
+    pub date_time: Option<NaiveDateTime>,
+    pub capacity: Option<i32>,
+    pub category: Option<String>,
+    pub image_url: Option<String>,
+}
+
 /// Query params za search
 #[derive(Debug, Deserialize)]
 pub struct EventQuery {

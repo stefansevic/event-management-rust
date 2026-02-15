@@ -87,6 +87,16 @@ pub async fn event_get(
     forward_request(&state.client, "GET", &url, &headers, None).await
 }
 
+pub async fn event_update(
+    State(state): State<AppState>,
+    Path(id): Path<String>,
+    req: Request,
+) -> Response {
+    let (headers, body) = read_body(req).await;
+    let url = format!("{}/events/{}", state.event_url, id);
+    forward_request(&state.client, "PUT", &url, &headers, Some(body)).await
+}
+
 pub async fn event_delete(
     State(state): State<AppState>,
     Path(id): Path<String>,
