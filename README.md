@@ -15,7 +15,7 @@ A microservices-based web application for managing events (conferences, workshop
 ```
                     ┌─────────────┐
                     │   Frontend  │  (port 8080)
-                    │  (Nginx)    │
+                    │   (Nginx)   │
                     └──────┬──────┘
                            │
                     ┌──────▼──────┐
